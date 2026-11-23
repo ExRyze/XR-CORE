@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script type="module" src="/src/main.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XR-Device</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+</head>
+
+<body class="min-h-screen flex flex-col font-sans bg-background text-foreground antialiased">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-card backdrop-blur border-b border-border sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Device Title & Version -->
+                <div class="flex items-center space-x-3">
+                    <img src="/logo.png" alt="ExRyze Logo" class="w-10 h-10 object-contain rounded-md">
+                    <div>
+                        <h1 id="device-name" class="text-md sm:text-lg font-bold text-foreground leading-tight">
+                            XR-Device
+                        </h1>
+                        <span id="device-version" class="text-xs text-muted-foreground inline">--</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <button id="nav-dashboard" onclick="switchPage('dashboard')"
+                        class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-primary text-primary-foreground shadow-sm">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Dashboard</span>
+                    </button>
+                    <button id="nav-config" onclick="switchPage('config')"
+                        class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-muted text-muted-foreground hover:text-foreground">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Config</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Notification Banner Area -->
+        <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+        <!-- ================= PAGE 1: DASHBOARD ================= -->
+        <section id="page-dashboard" class="space-y-6">
+            <div id="api-load-status"
+                class="hidden items-center justify-between gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger-foreground"
+                role="status" aria-live="polite">
+                <span id="api-load-message">Some device information could not be loaded.</span>
+                <button id="api-load-retry" type="button"
+                    class="shrink-0 rounded-lg border border-danger/40 px-3 py-1.5 text-xs font-medium hover:bg-danger/10">Retry</button>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Device overview</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-foreground mt-1">Welcome Back</h2>
+                    <p class="text-sm text-muted-foreground mt-1">Here’s what’s happening with your device today.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
+                    data-decimals="2" data-color="primary" data-icon="thermometer" class="contents"></div>
+                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
+                    data-decimals="2" data-color="success" data-icon="activity" class="contents"></div>
+                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
+                    data-decimals="2" data-color="info" data-icon="droplets" class="contents"></div>
+                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
+                    data-decimals="2" data-color="warning" data-icon="gauge" class="contents"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div data-widget="stepper" data-title="Target temperature" data-icon="sliders-horizontal"
+                    data-color="primary" data-value="22" data-min="16" data-max="30" data-step="1" data-unit="°C"
+                    data-decimals="0" class="contents"></div>
+                <div data-widget="value-input" data-title="Set point" data-icon="sliders-horizontal"
+                    data-color="primary" data-value="22" data-min="16" data-max="30" data-step="1" data-unit="°C"
+                    data-decimals="0" data-api-url="/api/dummy/telemetry" class="contents"></div>
+                <div data-widget="value-dropdown" data-title="Fan speed" data-icon="fan" data-color="info"
+                    data-choices='["Auto","Low","Medium","High"]' data-value="Auto" class="contents"></div>
+                <div data-widget="value-selector" data-title="Fan mode" data-icon="fan" data-color="info"
+                    data-value="Auto" data-choices='["Auto","Low","Medium","High"]' data-api-url="/api/dummy/telemetry"
+                    class="contents"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div data-widget="status" data-title="Water pump" data-icon="waves" data-color="success"
+                    data-value="Online" data-detail="Idle · 24 min" class="contents"></div>
+                <div data-widget="slider" data-title="Water level" data-icon="waves" data-color="primary"
+                    data-value="55" data-min="0" data-max="100" data-step="1" data-unit="%" data-decimals="0"
+                    data-api-url="/api/dummy/telemetry" class="contents"></div>
+                <div data-widget="push-button" data-title="Start irrigation" data-icon="sprout" data-color="success"
+                    data-label="Start" data-value="true" data-api-url="/api/dummy/telemetry"
+                    data-busy-label="Starting..." class="contents"></div>
+                <div data-widget="switch" data-title="Grow light" data-icon="lightbulb" data-color="warning"
+                    data-value="true" data-on-label="On · Auto" data-off-label="Off" class="contents"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div data-widget="percentage" data-title="Soil moisture" data-label="Semicircle" data-icon="sprout"
+                    data-color="success" data-value="62" data-detail="GOOD" data-variant="semicircle" class="contents">
+                </div>
+                <div data-widget="percentage" data-title="Soil moisture" data-label="Three quarter" data-icon="sprout"
+                    data-color="success" data-value="62" data-detail="Target 60%" data-variant="three-quarter"
+                    class="contents"></div>
+                <div data-widget="percentage" data-title="Soil moisture" data-label="Full circle" data-icon="sprout"
+                    data-color="success" data-value="62" data-detail="GOOD" data-variant="full" class="contents"></div>
+                <div data-widget="percentage" data-title="Daily goal" data-label="Line" data-icon="zap"
+                    data-color="primary" data-value="74" data-detail="2.96 kWh used · 4 kWh goal" data-variant="line"
+                    class="contents"></div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                <div data-widget="chart" data-title="Temperature &amp; humidity" data-label="History"
+                    data-icon="activity" data-color="primary" data-col-span="xl:col-span-2" data-chart-type="line"
+                    class="contents"></div>
+                <div data-widget="image" data-title="Greenhouse camera" data-label="Image" data-icon="image"
+                    data-color="primary" data-col-span="xl:col-span-2" data-image-url="/logo.png"
+                    data-alt="Sunlit greenhouse plants" data-caption="Zone A · Camera 01" data-detail="1920 × 1080"
+                    data-badge="Live preview" data-ratio="16 / 9" class="contents"></div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 2: CONFIGURATION ================= -->
+        <section id="page-config" class="space-y-6 hidden">
+
+            <!-- Sensor Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+                <!-- System Status -->
+                <div
+                    class="bg-card border text-card-foreground border-border rounded-2xl p-5 shadow-lg relative overflow-hidden backdrop-blur">
+                    <div>
+                        <div class="flex justify-between items-center pb-2 mb-4 border-b border-border">
+                            <p class="text-base font-semibold uppercase tracking-wider">System Status</p>
+                            <div class="text-primary">
+                                <i data-lucide="activity" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Chip</span>
+                                <span id="sys-chip-model"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">CPU</span>
+                                <span id="sys-cpu-freq"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Free Heap</span>
+                                <span id="sys-free-heap"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Device Info -->
+                <div
+                    class="bg-card border text-card-foreground border-border rounded-2xl p-5 shadow-lg relative overflow-hidden backdrop-blur">
+                    <div>
+                        <div class="flex justify-between items-center pb-2 mb-4 border-b border-border">
+                            <p class="text-base font-semibold uppercase tracking-wider">Device Info</p>
+                            <div class="text-primary">
+                                <i data-lucide="tablet-smartphone" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Brand</span>
+                                <span id="device-brand"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Name</span>
+                                <span id="device-name"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Version</span>
+                                <span id="device-version"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WiFi Status -->
+                <div
+                    class="bg-card border text-card-foreground border-border rounded-2xl p-5 shadow-lg relative overflow-hidden backdrop-blur">
+                    <div>
+                        <div class="flex justify-between items-center pb-2 mb-4 border-b border-border">
+                            <p class="text-base font-semibold uppercase tracking-wider">WiFi Status</p>
+                            <div class="text-primary">
+                                <i data-lucide="wifi" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">Mode</span>
+                                <span id="wifi-mode"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">SSID</span>
+                                <span id="wifi-ssid"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                            <li class="flex justify-between items-center text-card-foreground">
+                                <span class="flex items-center text-muted-foreground">IP</span>
+                                <span id="wifi-ip"
+                                    class="font-mono text-[11px] bg-background px-2 py-1 rounded border border-border">--</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-6">
+
+                <!-- Left two columns: configuration forms -->
+                <div class="lg:col-span-2 space-y-6">
+
+                    <!-- Wi-Fi Settings Form -->
+                    <div class="bg-card border border-border rounded-2xl p-6 shadow-lg backdrop-blur">
+                        <h2
+                            class="text-lg font-bold text-foreground flex items-center mb-4 border-b border-border pb-3">
+                            <i data-lucide="wifi" class="w-5 h-5 mr-2 text-primary"></i> Wi-Fi Access Settings
+                        </h2>
+
+                        <form id="wifi-form" onsubmit="" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Network
+                                        SSID</label>
+                                    <input type="text" id="cfg-ssid" required placeholder="WiFi Network Name"
+                                        class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Wi-Fi
+                                        Password</label>
+                                    <div class="relative">
+                                        <input type="password" id="cfg-password" placeholder="••••••••"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <button type="button" id="toggle-password-visibility"
+                                            class="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                                            aria-label="Show password" title="Show password">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="lucide lucide-eye">
+                                                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-3 flex justify-end">
+                                <button type="submit"
+                                    class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-md">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    <span>Save Network Settings</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- MQTT Settings -->
+                    <div class="bg-card border border-border rounded-2xl p-6 shadow-lg backdrop-blur">
+                        <div class="flex items-center justify-between gap-4 mb-4 border-b border-border pb-3">
+                            <button id="mqtt-card-collapse" type="button" aria-expanded="false"
+                                aria-controls="mqtt-card-content" aria-label="Expand MQTT settings"
+                                title="Expand MQTT settings"
+                                class="text-lg font-bold text-foreground flex items-center hover:text-primary transition-colors">
+                                <i data-lucide="radio-tower" class="w-5 h-5 mr-2 text-primary"></i> MQTT Settings
+                            </button>
+                            <div class="flex items-center gap-2"><span id="mqtt-feature-state"
+                                    class="text-xs text-muted-foreground">Disabled</span><button
+                                    id="mqtt-feature-toggle" type="button" role="switch" aria-checked="false"
+                                    aria-label="Enable MQTT"
+                                    class="relative h-7 w-12 rounded-full bg-muted transition-colors"><span
+                                        class="absolute left-1 top-1 h-5 w-5 rounded-full bg-foreground shadow transition-all"></span></button>
+                            </div>
+                        </div>
+                        <div id="mqtt-card-content" hidden>
+                            <form id="mqtt-form" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div><label for="mqtt-host"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Broker
+                                            host</label><input id="mqtt-host" type="text" placeholder="mqtt.example.com"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="mqtt-port"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Port</label><input
+                                            id="mqtt-port" type="number" value="1883" min="1" max="65535"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="mqtt-client-id"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Client
+                                            ID</label><input id="mqtt-client-id" type="text" value="xr-core-01"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="mqtt-topic"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Base
+                                            topic</label><input id="mqtt-topic" type="text"
+                                            placeholder="basetopic + /topic"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="mqtt-username"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username</label><input
+                                            id="mqtt-username" type="text" autocomplete="username"
+                                            placeholder="Optional"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="mqtt-password"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password</label><input
+                                            id="mqtt-password" type="password" autocomplete="new-password"
+                                            placeholder="Optional"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                </div>
+                                <label class="flex items-center gap-2 text-sm text-muted-foreground"><input
+                                        id="mqtt-clear-password" type="checkbox" class="h-4 w-4 accent-cyan-400"> Clear
+                                    saved MQTT password</label>
+                                <label class="flex items-center gap-2 text-sm text-muted-foreground"><input
+                                        id="mqtt-tls" type="checkbox" class="h-4 w-4 accent-cyan-400"> Use TLS
+                                    (typically port
+                                    8883)</label>
+                                <p class="text-xs text-muted-foreground">Settings are stored on the device. TLS
+                                    connections
+                                    verify the broker using the configured CA certificate.</p>
+                                <div class="flex justify-end"><button type="submit"
+                                        class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-md"><i
+                                            data-lucide="save" class="w-4 h-4"></i><span>Save MQTT
+                                            Settings</span></button>
+                                </div>
+                            </form>
+                            <form id="mqtt-ca-form" class="mt-5 border-t border-border pt-5 space-y-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <label for="mqtt-ca-file" class="text-sm font-medium text-foreground">Broker CA
+                                        certificate</label>
+                                    <span id="mqtt-ca-status" class="text-xs text-muted-foreground">Checking certificate
+                                        status...</span>
+                                </div>
+                                <input id="mqtt-ca-file" type="file" accept=".crt,.pem,.cer,application/x-pem-file"
+                                    class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-foreground">
+                                <p class="text-xs text-muted-foreground">Upload a PEM CA certificate (maximum 8 KB). The
+                                    certificate is not sent back to the browser. Restart the device after upload.</p>
+                                <div class="flex justify-end">
+                                    <button id="mqtt-ca-upload-button" type="submit"
+                                        class="flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-medium px-4 py-2 rounded-xl text-sm transition-colors">
+                                        <i data-lucide="upload" class="w-4 h-4"></i><span>Upload CA certificate</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- LoRa Settings -->
+                    <div class="bg-card border border-border rounded-2xl p-6 shadow-lg backdrop-blur">
+                        <div class="flex items-center justify-between gap-4 mb-4 border-b border-border pb-3">
+                            <button id="lora-card-collapse" type="button" aria-expanded="false"
+                                aria-controls="lora-card-content" aria-label="Expand LoRa settings"
+                                title="Expand LoRa settings"
+                                class="text-lg font-bold text-foreground flex items-center hover:text-primary transition-colors">
+                                <i data-lucide="waves" class="w-5 h-5 mr-2 text-primary"></i> LoRa Settings
+                            </button>
+                            <div class="flex items-center gap-2"><span id="lora-feature-state"
+                                    class="text-xs text-muted-foreground">Disabled</span><button
+                                    id="lora-feature-toggle" type="button" role="switch" aria-checked="false"
+                                    aria-label="Enable LoRa"
+                                    class="relative h-7 w-12 rounded-full bg-muted transition-colors"><span
+                                        class="absolute left-1 top-1 h-5 w-5 rounded-full bg-foreground shadow transition-all"></span></button>
+                            </div>
+                        </div>
+                        <div id="lora-card-content" hidden>
+                            <form id="lora-form" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div><label for="lora-frequency"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Frequency
+                                            (MHz)</label><input id="lora-frequency" type="number" value="915" min="137"
+                                            max="1020" step="0.001"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="lora-bandwidth"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bandwidth</label><select
+                                            id="lora-bandwidth"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground">
+                                            <option value="125">125 kHz</option>
+                                            <option value="250">250 kHz</option>
+                                            <option value="500">500 kHz</option>
+                                        </select></div>
+                                    <div><label for="lora-spreading-factor"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Spreading
+                                            factor</label><select id="lora-spreading-factor"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground">
+                                            <option>7</option>
+                                            <option>8</option>
+                                            <option>9</option>
+                                            <option>10</option>
+                                            <option>11</option>
+                                            <option>12</option>
+                                        </select></div>
+                                    <div><label for="lora-coding-rate"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Coding
+                                            rate</label><select id="lora-coding-rate"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground">
+                                            <option value="5">4/5</option>
+                                            <option value="6">4/6</option>
+                                            <option value="7">4/7</option>
+                                            <option value="8">4/8</option>
+                                        </select></div>
+                                    <div><label for="lora-tx-power"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Transmit
+                                            power (dBm)</label><input id="lora-tx-power" type="number" value="17"
+                                            min="2" max="20"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="lora-sync-word"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sync
+                                            word (hex)</label><input id="lora-sync-word" type="text" value="0x12"
+                                            maxlength="4"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="lora-node-id"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Node
+                                            ID</label><input id="lora-node-id" type="text" value="XR-CORE-01"
+                                            maxlength="32"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    <div><label for="lora-preamble-length"
+                                            class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preamble
+                                            length</label><input id="lora-preamble-length" type="number" value="8"
+                                            min="6" max="65535" step="1"
+                                            class="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                </div>
+                                <label class="flex items-center gap-2 text-sm text-muted-foreground"><input
+                                        id="lora-crc" type="checkbox" checked class="h-4 w-4 accent-violet-400"> Enable
+                                    packet CRC</label>
+                                <p class="text-xs text-muted-foreground">Choose a frequency permitted for your region
+                                    and supported by your radio module. Radio parameters are stored on the device and
+                                    applied after restart. GPIO pins and radio chip family are defined by the firmware
+                                    hardware profile.</p>
+                                <div class="flex justify-end"><button type="submit"
+                                        class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-md"><i
+                                            data-lucide="save" class="w-4 h-4"></i><span>Save LoRa
+                                            Settings</span></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Settings for potentially disruptive actions, such as restarting the device or clearing Wi-Fi credentials. -->
+                    <div class="bg-card border border-border rounded-2xl p-6 shadow-lg backdrop-blur">
+                        <h2
+                            class="text-lg font-bold text-foreground flex items-center mb-5 border-b border-border pb-3">
+                            <i data-lucide="shield-alert" class="w-5 h-5 mr-2 text-danger"></i> Danger Zone
+                        </h2>
+
+                        <div class="space-y-4">
+                            <div class="rounded-xl border border-danger/30 bg-danger/5 p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-semibold text-white">Clear Wi-Fi Credentials</p>
+                                        <p class="text-xs text-muted-foreground">Remove the saved SSID and password,
+                                            then switch the device to Access Point mode.</p>
+                                    </div>
+                                    <button type="button" onclick="clearWifiCredentials()"
+                                        class="flex items-center gap-2 bg-danger/15S hover:bg-danger/25 text-danger-foreground border border-danger/30 font-medium px-3 py-2 rounded-xl text-xs transition-colors">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        <span>Clear</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-danger/30 bg-danger/5 p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-semibold text-white">Reset AP Password</p>
+                                        <p class="text-xs text-muted-foreground">Delete the saved Access Point password
+                                            and generate a new one when the device starts AP mode again.</p>
+                                    </div>
+                                    <button type="button" onclick="resetApPassword()"
+                                        class="flex items-center gap-2 bg-danger/15S hover:bg-danger/25 text-danger-foreground border border-danger/30 font-medium px-3 py-2 rounded-xl text-xs transition-colors">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-danger/30 bg-danger/5 p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-semibold text-white">Reset MQTT Settings</p>
+                                        <p class="text-xs text-muted-foreground">Delete the saved MQTT configuration and
+                                            restore the default broker values.</p>
+                                    </div>
+                                    <button type="button" onclick="resetMqttSettings()"
+                                        class="flex items-center gap-2 bg-danger/15S hover:bg-danger/25 text-danger-foreground border border-danger/30 font-medium px-3 py-2 rounded-xl text-xs transition-colors">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-danger/30 bg-danger/5 p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-semibold text-white">Reset LoRa Settings</p>
+                                        <p class="text-xs text-muted-foreground">Delete the saved LoRa radio
+                                            configuration and restore the factory defaults.</p>
+                                    </div>
+                                    <button type="button" onclick="resetLoRaSettings()"
+                                        class="flex items-center gap-2 bg-danger/15S hover:bg-danger/25 text-danger-foreground border border-danger/30 font-medium px-3 py-2 rounded-xl text-xs transition-colors">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-warning/30 bg-warning/5 p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-semibold text-white">Restart Device</p>
+                                        <p class="text-xs text-muted-foreground">Restart the device to apply
+                                            changes or recover from an issue.</p>
+                                    </div>
+                                    <button type="button" onclick="restartDevice()"
+                                        class="flex items-center gap-2 bg-warning/15S hover:bg-warning/25 text-warning-foreground border border-warning/30 font-medium px-3 py-2 rounded-xl text-xs transition-colors">
+                                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                        <span>Restart</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column: Wi-Fi scanner panel -->
+                <div
+                    class="bg-card border border-border rounded-2xl p-6 shadow-lg backdrop-blur flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4 border-b border-border pb-3">
+                            <h2 class="text-base font-bold text-foreground flex items-center">
+                                <i data-lucide="radar" class="w-5 h-5 mr-2 text-primary"></i> Nearby WiFi
+                            </h2>
+                            <button onclick="scanNetworks()" id="scan-btn"
+                                class="p-1.5 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors flex items-center text-xs space-x-1">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                <span>Scan</span>
+                            </button>
+                        </div>
+
+                        <!-- Scanner List Container -->
+                        <div id="wifi-list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                            <p class="text-xs text-muted-foreground text-center py-6">Click "Scan" to discover nearby
+                                Wi-Fi
+                                access points.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
+                        <p class="flex justify-between"><span>Connected SSID:</span> <span id="wifi-ssid"
+                                class="text-card-foreground font-mono">--</span></p>
+                        <p class="flex justify-between"><span>RSSI:</span> <span id="wifi-rssi"
+                                class="text-card-foreground font-mono">--</span></p>
+                        <p class="flex justify-between"><span>Signal:</span> <span id="wifi-signal"
+                                class="text-card-foreground font-mono">--</span></p>
+                        <p class="flex justify-between"><span>MAC Address:</span> <span id="wifi-mac"
+                                class="text-card-foreground font-mono">--</span></p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border bg-card/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="grid gap-6 md:grid-cols-3">
+                <div class="flex items-start gap-3">
+                    <img src="/logo.png" alt="ExRyze Logo" class="w-16 h-16 object-contain rounded-lg">
+                    <div>
+                        <h3 id="device-name" class="text-base font-bold text-foreground">XR-Device</h3>
+                        <p class="text-xs text-muted-foreground mt-1">Smart embedded local web server control and
+                            monitoring platform for connected projects.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Device Overview
+                    </p>
+                    <ul class="space-y-2 text-sm text-foreground/90">
+                        <li class="flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-primary"></i>Brand:
+                            <span id="device-brand">--</span>
+                        </li>
+                        <li class="flex items-center gap-2"><i data-lucide="tag" class="w-4 h-4 text-primary"></i>Name:
+                            <span id="device-name">--</span>
+                        </li>
+                        <li class="flex items-center gap-2"><i data-lucide="badge-info"
+                                class="w-4 h-4 text-primary"></i>Version: <span id="device-version">--</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Connection</p>
+                    <ul class="space-y-2 text-sm text-foreground/90">
+                        <li class="flex items-center gap-2"><i data-lucide="radio"
+                                class="w-4 h-4 text-primary"></i>SSID: <span id="wifi-ssid">--</span></li>
+                        <li class="flex items-center gap-2"><i data-lucide="signal"
+                                class="w-4 h-4 text-primary"></i>Signal: <span id="wifi-signal">--</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span class="relative flex h-2.5 w-2.5"><span
+                            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span><span
+                            class="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary"></span></span>
+                    All systems are operational
+                </div>
+                <p class="text-xs text-muted-foreground/90">Created by ExRyze</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Load all API routes -->
+
+    <!-- Application Script Logic -->
+    <script type="module">document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            bindWifiForm();
+            bindPasswordToggle();
+            bindNetworkSettingsForms();
+            document.getElementById('api-load-retry').addEventListener('click', loadAPIs);
+            loadAPIs();
+        });
+
+        // API Logic
+        let dashboardLoadInProgress = false;
+        async function loadAPIs() {
+            if (dashboardLoadInProgress) return;
+            dashboardLoadInProgress = true;
+
+            const statusBox = document.getElementById('api-load-status');
+            const retryButton = document.getElementById('api-load-retry');
+            const message = document.getElementById('api-load-message');
+            const failures = [];
+            statusBox.classList.add('hidden');
+            retryButton.disabled = true;
+            retryButton.textContent = 'Loading...';
+
+            const setTextForAll = (selector, value) => {
+                document.querySelectorAll(selector).forEach((element) => {
+                    element.textContent = value;
+                });
+            };
+
+            try {
+                // Load the information needed for the visible dashboard first.
+                const primaryResults = await Promise.allSettled([
+                    DeviceApi.device.getStatus(),
+                    DeviceApi.wifi.getStatus()
+                ]);
+                const [deviceResult, wifiResult] = primaryResults.map((result) =>
+                    result.status === 'fulfilled' ? result.value : null
+                );
+
+                if (primaryResults[0].status === 'fulfilled') {
+                    setTextForAll('#device-brand', deviceResult?.brand || 'ExRyze');
+                    document.title = deviceResult?.name || 'XR-Device';
+                    setTextForAll('#device-name', deviceResult?.name || 'XR-Device');
+                    setTextForAll('#device-version', deviceResult?.version || '--');
+                } else failures.push('device');
+
+                if (primaryResults[1].status === 'fulfilled') {
+                    setTextForAll('#wifi-mode', wifiResult?.mode || '--');
+                    setTextForAll('#wifi-ssid', wifiResult?.savedSsid || '--');
+                    setTextForAll('#wifi-ip', wifiResult?.ip || '--');
+                    setTextForAll('#wifi-rssi', wifiResult?.rssi !== undefined ? `${wifiResult.rssi} dBm` : '--');
+                    const signal = Number(wifiResult?.signalQuality);
+                    setTextForAll('#wifi-signal', Number.isFinite(signal) ? `${Math.max(0, Math.min(100, signal))}%` : '--');
+                } else failures.push('Wi-Fi');
+
+                // System diagnostics can be slower (including sketch MD5), so they do not block the dashboard.
+                try {
+                    const systemResult = await DeviceApi.system.getStatus();
+                    setTextForAll('#sys-chip-model', systemResult?.chipModel || '--');
+                    setTextForAll('#sys-cpu-freq', systemResult?.cpuFreqMHz ? `${systemResult.cpuFreqMHz} MHz` : '--');
+                    setTextForAll('#sys-free-heap', systemResult?.freeHeap ? `${systemResult.freeHeap} B` : '--');
+                    const rawMac = String(systemResult?.efuseMac || '').trim();
+                    const formattedMac = rawMac.length === 12 && /^[0-9a-fA-F]+$/.test(rawMac)
+                        ? rawMac.match(/.{1,2}/g).join(':').toLowerCase()
+                        : rawMac || '--';
+                    setTextForAll('#wifi-mac', formattedMac);
+                } catch (error) {
+                    console.error('Failed to load system diagnostics:', error);
+                    failures.push('system diagnostics');
+                }
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                failures.push('dashboard data');
+            } finally {
+                dashboardLoadInProgress = false;
+                retryButton.disabled = false;
+                retryButton.textContent = 'Retry';
+                if (failures.length) {
+                    message.textContent = `Could not load ${failures.join(' and ')}. Check the connection and retry.`;
+                    statusBox.classList.remove('hidden');
+                    statusBox.classList.add('flex');
+                }
+            }
+        }
+
+        // Navigation Logic
+        function switchPage(page) {
+            const dashPage = document.getElementById('page-dashboard');
+            const configPage = document.getElementById('page-config');
+            const dashBtn = document.getElementById('nav-dashboard');
+            const configBtn = document.getElementById('nav-config');
+
+            if (page === 'dashboard') {
+                dashPage.classList.remove('hidden');
+                configPage.classList.add('hidden');
+
+                dashBtn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-primary text-primary-foreground shadow-sm";
+                configBtn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-muted text-muted-foreground hover:text-foreground";
+            } else {
+                dashPage.classList.add('hidden');
+                configPage.classList.remove('hidden');
+
+                configBtn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-primary text-primary-foreground shadow-sm";
+                dashBtn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-muted text-muted-foreground hover:text-foreground";
+            }
+        }
+
+        // Config Function
+        function bindPasswordToggle() {
+            const passwordInput = document.getElementById('cfg-password');
+            const toggleButton = document.getElementById('toggle-password-visibility');
+
+            if (!passwordInput || !toggleButton) return;
+
+            toggleButton.addEventListener('click', () => {
+                const isPasswordHidden = passwordInput.type === 'password';
+                passwordInput.type = isPasswordHidden ? 'text' : 'password';
+
+                toggleButton.setAttribute('aria-label', isPasswordHidden ? 'Hide password' : 'Show password');
+                toggleButton.setAttribute('title', isPasswordHidden ? 'Hide password' : 'Show password');
+                toggleButton.innerHTML = isPasswordHidden
+                    ? `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-off">
+                            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                            <path d="M10.73 5.08A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a16.27 16.27 0 0 1-3.13 4.47"/>
+                            <path d="M6.61 6.61A16.29 16.29 0 0 0 2 12s3.5 7 10 7a10.9 10.9 0 0 0 5.39-1.61"/>
+                            <line x1="2" x2="22" y1="2" y2="22"/>
+                        </svg>
+                    `
+                    : `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye">
+                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    `;
+            });
+        }
+
+        function bindWifiForm() {
+            const form = document.getElementById('wifi-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const ssid = document.getElementById('cfg-ssid')?.value?.trim() || '';
+                const password = document.getElementById('cfg-password')?.value || '';
+
+                if (!ssid) {
+                    showToast('Enter a Wi-Fi network name (SSID).', 'warning');
+                    return;
+                }
+
+                try {
+                    const result = await DeviceApi.wifi.save(ssid, password, true);
+                    const status = result && result.status ? result.status : 'ok';
+                    showToast(status === 'ok' ? 'Wi-Fi credentials saved successfully.' : 'Failed to save Wi-Fi credentials.', status === 'ok' ? 'success' : 'error');
+                } catch (error) {
+                    showToast('Failed to save Wi-Fi credentials.', 'error');
+                }
+            });
+        }
+
+        function bindNetworkSettingsForms() {
+            [
+                { toggleId: 'mqtt-feature-toggle', stateId: 'mqtt-feature-state', formId: 'mqtt-form', name: 'MQTT' },
+                { toggleId: 'lora-feature-toggle', stateId: 'lora-feature-state', formId: 'lora-form', name: 'LoRa' }
+            ].forEach(({ toggleId, stateId, formId, name }) => {
+                const toggle = document.getElementById(toggleId);
+                const state = document.getElementById(stateId);
+                const form = document.getElementById(formId);
+                if (!toggle || !state || !form) return;
+
+                const updateFeatureState = (isEnabled) => {
+                    toggle.setAttribute('aria-checked', String(isEnabled));
+                    toggle.setAttribute('aria-label', `${isEnabled ? 'Disable' : 'Enable'} ${name}`);
+                    toggle.classList.toggle('bg-primary', isEnabled);
+                    toggle.classList.toggle('bg-muted', !isEnabled);
+                    const knob = toggle.querySelector('span');
+                    knob.classList.toggle('left-1', !isEnabled);
+                    knob.classList.toggle('right-1', isEnabled);
+                    state.textContent = isEnabled ? 'Enabled · not connected' : 'Disabled';
+                    state.className = isEnabled ? 'text-xs text-warning' : 'text-xs text-muted-foreground';
+                    form.querySelectorAll('input, select, button').forEach((control) => {
+                        control.disabled = !isEnabled;
+                    });
+                };
+
+                updateFeatureState(false);
+                toggle.addEventListener('click', () => {
+                    updateFeatureState(toggle.getAttribute('aria-checked') !== 'true');
+                });
+            });
+
+            loadMqttSettings();
+            updateMqttConnectionStatus();
+            window.setInterval(updateMqttConnectionStatus, 3000);
+            loadLoRaSettings();
+            document.getElementById('mqtt-form')?.addEventListener('submit', saveMqttSettings);
+            loadMqttCaStatus();
+            document.getElementById('mqtt-ca-form')?.addEventListener('submit', uploadMqttCaCertificate);
+            document.getElementById('lora-form')?.addEventListener('submit', saveLoRaSettings);
+            bindCardCollapse('mqtt-card-collapse', 'mqtt-card-content', 'MQTT');
+            bindCardCollapse('lora-card-collapse', 'lora-card-content', 'LoRa');
+        }
+
+        function bindCardCollapse(buttonId, contentId, name) {
+            const button = document.getElementById(buttonId);
+            const content = document.getElementById(contentId);
+            if (!button || !content) return;
+            button.addEventListener('click', () => {
+                const expanded = button.getAttribute('aria-expanded') === 'true';
+                button.setAttribute('aria-expanded', String(!expanded));
+                button.setAttribute('aria-label', `${expanded ? 'Expand' : 'Collapse'} ${name} settings`);
+                button.title = `${expanded ? 'Expand' : 'Collapse'} ${name} settings`;
+                content.hidden = expanded;
+            });
+        }
+
+        async function loadLoRaSettings() {
+            try {
+                const settings = await DeviceApi.lora.getSettings();
+                document.getElementById('lora-frequency').value = settings.frequency ?? 915;
+                document.getElementById('lora-bandwidth').value = settings.bandwidth ?? 125;
+                document.getElementById('lora-spreading-factor').value = settings.spreadingFactor ?? 7;
+                document.getElementById('lora-coding-rate').value = settings.codingRate ?? 5;
+                document.getElementById('lora-tx-power').value = settings.txPower ?? 17;
+                document.getElementById('lora-sync-word').value = `0x${Number(settings.syncWord ?? 0x12).toString(16).padStart(2, '0')}`;
+                document.getElementById('lora-node-id').value = settings.nodeId || 'XR-CORE-01';
+                document.getElementById('lora-preamble-length').value = settings.preambleLength ?? 8;
+                document.getElementById('lora-crc').checked = settings.crcEnabled ?? true;
+                if (settings.enabled) document.getElementById('lora-feature-toggle')?.click();
+                const state = document.getElementById('lora-feature-state');
+                if (settings.enabled && settings.initialized) {
+                    state.textContent = 'Enabled · radio ready';
+                    state.className = 'text-xs text-success';
+                } else if (settings.enabled) {
+                    state.textContent = 'Enabled · restart required';
+                }
+            } catch (error) {
+                showToast('Failed to load LoRa settings.', 'error');
+            }
+        }
+
+        async function saveLoRaSettings(event) {
+            event.preventDefault();
+            const settings = {
+                enabled: document.getElementById('lora-feature-toggle').getAttribute('aria-checked') === 'true',
+                frequency: Number(document.getElementById('lora-frequency').value),
+                bandwidth: Number(document.getElementById('lora-bandwidth').value),
+                spreadingFactor: Number(document.getElementById('lora-spreading-factor').value),
+                codingRate: Number(document.getElementById('lora-coding-rate').value),
+                txPower: Number(document.getElementById('lora-tx-power').value),
+                syncWord: document.getElementById('lora-sync-word').value.trim(),
+                preambleLength: Number(document.getElementById('lora-preamble-length').value),
+                crcEnabled: document.getElementById('lora-crc').checked,
+                nodeId: document.getElementById('lora-node-id').value.trim()
+            };
+            try {
+                await DeviceApi.lora.saveSettings(settings);
+                showToast('LoRa settings saved. Restart the device to apply them.', 'success');
+            } catch (error) {
+                showToast('Failed to save LoRa settings. Check the radio parameters and sync word.', 'error');
+            }
+        }
+
+        async function loadMqttSettings() {
+            try {
+                const settings = await DeviceApi.mqtt.getSettings();
+                document.getElementById('mqtt-host').value = settings.server || '';
+                document.getElementById('mqtt-port').value = settings.port || 1883;
+                document.getElementById('mqtt-client-id').value = settings.clientId || '';
+                document.getElementById('mqtt-topic').value = settings.baseTopic || '';
+                document.getElementById('mqtt-username').value = settings.username || '';
+                document.getElementById('mqtt-password').value = '';
+                document.getElementById('mqtt-password').placeholder = settings.hasPassword ? 'Saved; leave blank to keep' : 'Optional';
+                document.getElementById('mqtt-tls').checked = Boolean(settings.tls);
+                const toggle = document.getElementById('mqtt-feature-toggle');
+                if (settings.enabled) toggle.click();
+            } catch (error) {
+                showToast('Failed to load MQTT settings.', 'error');
+            }
+        }
+
+        async function updateMqttConnectionStatus() {
+            const toggle = document.getElementById('mqtt-feature-toggle');
+            const state = document.getElementById('mqtt-feature-state');
+            if (!toggle || !state) return;
+
+            if (toggle.getAttribute('aria-checked') !== 'true') {
+                state.textContent = 'Disabled';
+                state.className = 'text-xs text-muted-foreground';
+                return;
+            }
+
+            if (updateMqttConnectionStatus.inFlight) return;
+            updateMqttConnectionStatus.inFlight = true;
+            try {
+                const status = await DeviceApi.mqtt.getStatus();
+                state.textContent = status.connected ? 'Connected' : 'Enabled · disconnected';
+                state.className = status.connected ? 'text-xs text-success' : 'text-xs text-warning';
+            } catch (error) {
+                state.textContent = 'Connection status unavailable';
+                state.className = 'text-xs text-danger';
+            } finally {
+                updateMqttConnectionStatus.inFlight = false;
+            }
+        }
+
+        async function saveMqttSettings(event) {
+            event.preventDefault();
+            const settings = {
+                enabled: document.getElementById('mqtt-feature-toggle').getAttribute('aria-checked') === 'true',
+                server: document.getElementById('mqtt-host').value.trim(),
+                port: Number(document.getElementById('mqtt-port').value),
+                clientId: document.getElementById('mqtt-client-id').value.trim(),
+                baseTopic: document.getElementById('mqtt-topic').value.trim(),
+                username: document.getElementById('mqtt-username').value.trim(),
+                password: document.getElementById('mqtt-password').value,
+                clearPassword: document.getElementById('mqtt-clear-password').checked,
+                tls: document.getElementById('mqtt-tls').checked
+            };
+            try {
+                await DeviceApi.mqtt.saveSettings(settings);
+                showToast('MQTT settings saved. Restart the device to apply them.', 'success');
+                document.getElementById('mqtt-password').value = '';
+                document.getElementById('mqtt-clear-password').checked = false;
+            } catch (error) {
+                showToast('Failed to save MQTT settings. Check the broker host, port, and client ID.', 'error');
+            }
+        }
+
+        async function loadMqttCaStatus() {
+            const status = document.getElementById('mqtt-ca-status');
+            try {
+                const result = await DeviceApi.mqtt.getCaStatus();
+                status.textContent = result.available ? 'Certificate is stored' : 'No certificate uploaded';
+                status.className = result.available ? 'text-xs text-success' : 'text-xs text-warning';
+            } catch (error) {
+                status.textContent = 'Certificate status unavailable';
+                status.className = 'text-xs text-danger';
+            }
+        }
+
+        async function uploadMqttCaCertificate(event) {
+            event.preventDefault();
+            const input = document.getElementById('mqtt-ca-file');
+            const file = input.files?.[0];
+            if (!file) {
+                showToast('Select a CA certificate file first.', 'warning');
+                return;
+            }
+            if (file.size === 0 || file.size > 8192) {
+                showToast('The CA certificate must be between 1 byte and 8 KB.', 'error');
+                return;
+            }
+            try {
+                await DeviceApi.mqtt.uploadCaCertificate(file);
+                input.value = '';
+                showToast('CA certificate uploaded. Restart the device to apply it.', 'success');
+                await loadMqttCaStatus();
+            } catch (error) {
+                showToast('CA upload failed. Check that the file is a PEM certificate.', 'error');
+            }
+        }
+
+        // Config Actions
+        async function scanNetworks() {
+            const container = document.getElementById('wifi-list');
+            container.innerHTML = `<div class="flex items-center justify-center py-8 text-muted-foreground space-x-2"><i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span class="text-xs">Scanning access points...</span></div>`;
+            lucide.createIcons();
+
+            let networks = [];
+            try {
+                const scanTimeoutMs = 30000;
+                const pollIntervalMs = 500;
+                const scanStartedAt = Date.now();
+                let result = await DeviceApi.wifi.scan();
+
+                while (result?.status === 'scanning' && Date.now() - scanStartedAt < scanTimeoutMs) {
+                    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+                    result = await DeviceApi.wifi.scan();
+                }
+
+                if (result?.status === 'scanning') {
+                    throw new Error('Wi-Fi scan timed out.');
+                }
+                if (result?.status === 'error') {
+                    throw new Error(result.message || 'Wi-Fi scan failed.');
+                }
+
+                const rawNetworks = Array.isArray(result)
+                    ? result
+                    : Array.isArray(result?.networks)
+                        ? result.networks
+                        : [];
+
+                networks = rawNetworks.map((net, index) => ({
+                    ssid: net?.ssid ?? net?.name ?? `Network ${index + 1}`,
+                    rssi: Number(net?.rssi ?? net?.signal ?? 0),
+                    secure: net?.encryptionType !== undefined
+                        ? Number(net.encryptionType) !== 0
+                        : Boolean(net?.secure)
+                }));
+            } catch (e) {
+                showToast("Scan failed", "error");
+                networks = [];
+            }
+
+            if (networks.length === 0) {
+                container.innerHTML = `<p class="text-xs text-muted-foreground text-center py-4">No networks found.</p>`;
+                return;
+            }
+
+            const networkList = document.createDocumentFragment();
+            networks.forEach(net => {
+                const networkItem = document.createElement('div');
+                networkItem.className = 'p-2.5 rounded-xl bg-background hover:bg-muted border border-border cursor-pointer flex items-center justify-between transition-colors';
+                networkItem.addEventListener('click', () => selectNetwork(String(net.ssid)));
+
+                const networkDetails = document.createElement('div');
+                networkDetails.className = 'flex items-center space-x-2 overflow-hidden';
+
+                const securityIcon = document.createElement('i');
+                securityIcon.setAttribute('data-lucide', net.secure ? 'lock' : 'unlock');
+                securityIcon.className = `w-3.5 h-3.5 ${net.secure ? 'text-warning' : 'text-muted-foreground'} flex-shrink-0`;
+
+                const ssidLabel = document.createElement('span');
+                ssidLabel.className = 'text-xs font-median text-foreground truncate';
+                ssidLabel.textContent = String(net.ssid);
+
+                const signalLabel = document.createElement('span');
+                signalLabel.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-card text-muted-foreground';
+                signalLabel.textContent = `${net.rssi} dBm`;
+
+                networkDetails.append(securityIcon, ssidLabel);
+                networkItem.append(networkDetails, signalLabel);
+                networkList.appendChild(networkItem);
+            });
+
+            container.replaceChildren(networkList);
+
+            lucide.createIcons();
+        }
+
+        function selectNetwork(ssid) {
+            document.getElementById('cfg-ssid').value = ssid;
+            showToast(`Selected network: ${ssid}`, 'info');
+        }
+
+        async function restartDevice() {
+            const confirmed = window.confirm('Are you sure you want to restart the device?');
+            if (!confirmed) return;
+
+            try {
+                const result = await DeviceApi.system.restart();
+                const status = result && result.status ? result.status : 'ok';
+                showToast(status === 'ok' ? 'The device is restarting...' : 'Restart failed.', status === 'ok' ? 'success' : 'error');
+            } catch (error) {
+                showToast('Restart failed.', 'error');
+            }
+        }
+
+        async function clearWifiCredentials() {
+            const confirmed = window.confirm('Are you sure you want to clear the saved Wi-Fi credentials? The device will switch to Access Point mode.');
+            if (!confirmed) return;
+
+            try {
+                const result = await DeviceApi.wifi.clear();
+                const status = result && result.status ? result.status : 'ok';
+
+                if (status === 'ok') {
+                    showToast('Wi-Fi credentials cleared successfully.', 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(result?.message || 'Failed to clear Wi-Fi credentials.', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to clear Wi-Fi credentials.', 'error');
+            }
+        }
+
+        async function resetApPassword() {
+            const confirmed = window.confirm('Are you sure you want to reset the Access Point password? A new password will be generated the next time AP mode starts.');
+            if (!confirmed) return;
+
+            try {
+                const result = await DeviceApi.wifi.clearApPassword();
+                const status = result && result.status ? result.status : 'ok';
+
+                if (status === 'ok') {
+                    showToast('AP password reset successfully.', 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(result?.message || 'Failed to reset AP password.', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to reset AP password.', 'error');
+            }
+        }
+
+        async function resetMqttSettings() {
+            const confirmed = window.confirm('Are you sure you want to reset the saved MQTT configuration? This clears the stored broker settings from NVS.');
+            if (!confirmed) return;
+
+            try {
+                const result = await DeviceApi.mqtt.clearSettings();
+                const status = result && result.status ? result.status : 'ok';
+
+                if (status === 'ok') {
+                    showToast('MQTT settings reset successfully.', 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(result?.message || 'Failed to reset MQTT settings.', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to reset MQTT settings.', 'error');
+            }
+        }
+
+        async function resetLoRaSettings() {
+            const confirmed = window.confirm('Are you sure you want to reset the saved LoRa configuration? This clears the stored radio settings from NVS.');
+            if (!confirmed) return;
+
+            try {
+                const result = await DeviceApi.lora.clearSettings();
+                const status = result && result.status ? result.status : 'ok';
+
+                if (status === 'ok') {
+                    showToast('LoRa settings reset successfully.', 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(result?.message || 'Failed to reset LoRa settings.', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to reset LoRa settings.', 'error');
+            }
+        }
+
+        // Build-in
+        Object.assign(window, {
+            switchPage,
+            restartDevice,
+            clearWifiCredentials,
+            resetApPassword,
+            resetMqttSettings,
+            resetLoRaSettings,
+            scanNetworks
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bgBg = 'bg-card border-border text-foreground';
+            if (type === 'success') bgBg = 'bg-success/10 border-success/40 text-success';
+            if (type === 'error') bgBg = 'bg-danger/10 border-danger/40 text-danger';
+            if (type === 'warning') bgBg = 'bg-warning/10 border-warning/40 text-warning';
+
+            toast.className = `pointer-events-auto flex items-center p-3 rounded-xl border shadow-xl text-xs font-medium space-x-2 transition-all transform duration-300 translate-y-2 opacity-0 ${bgBg}`;
+            const messageLabel = document.createElement('span');
+            messageLabel.textContent = String(message);
+            toast.appendChild(messageLabel);
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+
+</html>

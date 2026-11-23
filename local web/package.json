@@ -1,0 +1,22 @@
+{
+  "name": "xr-core-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader runner",
+    "build": "vite build --configLoader runner"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.7",
+    "lucide": "^0.468.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "vite": "^6.0.7"
+  }
+}
+
+
