@@ -22,12 +22,16 @@ extern const char *AP_PASS;
 // Local Web Config
 extern const char *WEB_AUTH_USERNAME;
 extern const char *WEB_AUTH_PASSWORD;
+extern const bool WEB_AP_AUTO_OPEN;
 
 // MQTT Config
 extern const bool MQTT_ENABLED;
 extern const char *MQTT_SERVER;
 extern const uint16_t MQTT_PORT;
+extern const bool MQTT_USE_TLS;
 extern const char *MQTT_CLIENT_ID;
+extern const char *MQTT_BASE_TOPIC;
+extern const uint32_t MQTT_TELEMETRY_INTERVAL_MS;
 extern const char *MQTT_USERNAME;
 extern const char *MQTT_PASSWORD;
 

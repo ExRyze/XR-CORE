@@ -4,7 +4,7 @@
 // Device Information
 const char *deviceBrand = "ExRyze";
 const char *deviceName = "XR-CORE";
-const char *deviceVersion = "V.1.1.0";
+const char *deviceVersion = "1.1.0";
 
 // NTP Config
 const long GMT_OFFSET_SEC = 8 * 3600;
@@ -17,21 +17,25 @@ const char *WIFI_SSID = nullptr;
 const char *WIFI_PASSWORD = nullptr;
 
 // Access Point Config
-const char *AP_SSID = "ExRyze";
-const char *AP_PASS = ""; // nullptr: open AP; "": random password; "...": use it directly.
+const char *AP_SSID = "XR-CORE";
+const char *AP_PASS = nullptr; // nullptr: open AP; "": random password; "...": use it directly.
 
 // Local Web Config
-const char *WEB_AUTH_USERNAME = "admin";
-const char *WEB_AUTH_PASSWORD = "Q7!mK2@wP4#x";
+const char *WEB_AUTH_USERNAME = "root";
+const char *WEB_AUTH_PASSWORD = "";
+const bool WEB_AP_AUTO_OPEN = true;
 
 // MQTT Config
 // Feature defaults; can be changed in local web config settings; saved in Preferences.
 const bool MQTT_ENABLED = false;
-const char *MQTT_SERVER = "localhost";
+const char *MQTT_SERVER = "mqtt.local";
 const uint16_t MQTT_PORT = 8883;
+const bool MQTT_USE_TLS = true;
 const char *MQTT_CLIENT_ID = "XR-CORE-01";
-const char *MQTT_USERNAME = "exryze";
-const char *MQTT_PASSWORD = "";
+const char *MQTT_BASE_TOPIC = "exryze/xrcore/001";
+const uint32_t MQTT_TELEMETRY_INTERVAL_MS = 5000UL;
+const char *MQTT_USERNAME = "exryze-xrcore-001";
+const char *MQTT_PASSWORD = "xrcore001";
 
 // LoRa Config
 // Feature defaults; can be changed in local web config settings; saved in Preferences.
@@ -44,7 +48,7 @@ const int8_t LORA_TX_POWER = 2;
 const uint8_t LORA_SYNC_WORD = 0x12;
 const uint16_t LORA_PREAMBLE_LENGTH = 8;
 const bool LORA_CRC_ENABLED = true;
-const char *LORA_NODE_ID = "XR-CORE-01";
+const char *LORA_NODE_ID = "XR-CORE-001";
 
 // Arduino Cloud Config
 // Feature defaults; can't be changed in local web config settings; CONFIDENTIAL.

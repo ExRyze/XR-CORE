@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Preferences.h>
+#include <DNSServer.h>
 #include <atomic>
 #include <time.h>
 #include "Config.h"
@@ -29,7 +30,8 @@ public:
     void begin();
     void loop();
 
-    void saveCredentials(const String &ssid, const String &password, bool restartAfterSave = false);
+    bool saveCredentials(const String &ssid, const String &password);
+    void applySavedCredentials(bool restartAfterSave = false);
     void reconnectNow();
     void clearCredentials();
     void clearApPassword();
@@ -57,6 +59,7 @@ public:
 
 private:
     mutable Preferences _prefs;
+    DNSServer _dnsServer;
     std::atomic<WiFiMode> _mode;
 
     std::atomic<uint32_t> _connectStartTime;
@@ -68,6 +71,7 @@ private:
     const uint32_t _buttonDebounceMs = 40;
     bool _scanActive;
     bool _scanWasApMode;
+    bool _dnsServerStarted = false;
 
     void _initTime(); // Configure NTP time synchronization.
 

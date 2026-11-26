@@ -1,29 +1,34 @@
 #include "MQTT_Manager.h"
 #include "Config.h"
 #include <ArduinoJson.h>
+#include <esp_system.h>
+#include <time.h>
 
 MQTTManager *MQTTManager::_instance = nullptr;
 
 MQTTManager::MQTTManager(const char *server, uint16_t port,
                          const char *clientId, const char *user, const char *pass)
     : _mqtt(_wifiClient), _server(server), _port(port),
-      _clientId(clientId), _user(user), _pass(pass), _enabled(MQTT_ENABLED)
+      _clientId(clientId), _user(user), _pass(pass), _baseTopic(MQTT_BASE_TOPIC), _enabled(MQTT_ENABLED)
 {
     _instance = this;
 }
 
 bool MQTTManager::begin()
 {
+    _clientReady = false;
     if (_preferences.begin("mqtt-config", true))
     {
         _enabled = _preferences.getBool("enabled", MQTT_ENABLED);
         _server = _preferences.getString("server", _server);
         _port = _preferences.getUShort("port", _port);
         _clientId = _preferences.getString("clientId", _clientId);
-        _baseTopic = _preferences.getString("baseTopic", "");
+        _baseTopic = _preferences.getString("baseTopic", MQTT_BASE_TOPIC);
+        if (_baseTopic.length() == 0)
+            _baseTopic = MQTT_BASE_TOPIC;
         _user = _preferences.getString("username", _user);
         _pass = _preferences.getString("password", _pass);
-        _useTls = _preferences.getBool("tls", false);
+        _useTls = _preferences.getBool("tls", MQTT_USE_TLS);
         _preferences.end();
     }
 
@@ -44,7 +49,6 @@ bool MQTTManager::begin()
         if (!certificateFile || certificateFile.size() == 0 || certificateFile.size() > 8192)
         {
             Serial.println("[ERROR] MQTT CA certificate is missing or has an invalid size.");
-            _enabled = false;
             return false;
         }
         _caCert = certificateFile.readString();
@@ -54,7 +58,6 @@ bool MQTTManager::begin()
         {
             Serial.println("[ERROR] MQTT CA certificate is not valid PEM text.");
             _caCert = "";
-            _enabled = false;
             return false;
         }
         _secureClient.setCACert(_caCert.c_str());
@@ -67,8 +70,13 @@ bool MQTTManager::begin()
 
     _mqtt.setServer(_server.c_str(), _port);
     _mqtt.setCallback(MQTTManager::staticCallback);
-    _enabled = true;
-    reconnect();
+    _mqtt.setSocketTimeout(3);
+    if (!_mqtt.setBufferSize(1024))
+    {
+        Serial.println("[ERROR] Failed to allocate the MQTT packet buffer.");
+        return false;
+    }
+    _clientReady = true;
     return true;
 }
 
@@ -86,7 +94,7 @@ bool MQTTManager::saveSettings(bool enabled, const String &server, uint16_t port
     _preferences.putString("server", server);
     _preferences.putUShort("port", port);
     _preferences.putString("clientId", clientId);
-    _preferences.putString("baseTopic", baseTopic);
+    _preferences.putString("baseTopic", baseTopic.length() ? baseTopic : MQTT_BASE_TOPIC);
     _preferences.putString("username", username);
     _preferences.putBool("tls", useTls);
     if (clearPassword)
@@ -106,13 +114,14 @@ bool MQTTManager::clearSettings()
     _preferences.end();
 
     _enabled = MQTT_ENABLED;
+    _clientReady = false;
     _server = "";
     _port = 1883;
     _clientId = "";
-    _baseTopic = "";
+    _baseTopic = MQTT_BASE_TOPIC;
     _user = "";
     _pass = "";
-    _useTls = false;
+    _useTls = MQTT_USE_TLS;
     return true;
 }
 
@@ -126,10 +135,10 @@ String MQTTManager::settingsJson() const
         document["server"] = preferences.getString("server", _server);
         document["port"] = preferences.getUShort("port", _port);
         document["clientId"] = preferences.getString("clientId", _clientId);
-        document["baseTopic"] = preferences.getString("baseTopic", "");
+        document["baseTopic"] = preferences.getString("baseTopic", MQTT_BASE_TOPIC);
         document["username"] = preferences.getString("username", _user);
         document["hasPassword"] = preferences.getString("password", _pass).length() > 0;
-        document["tls"] = preferences.getBool("tls", false);
+        document["tls"] = preferences.getBool("tls", MQTT_USE_TLS);
         preferences.end();
     }
     else
@@ -150,20 +159,28 @@ String MQTTManager::settingsJson() const
 
 void MQTTManager::reconnect()
 {
-    if (!_enabled)
+    if (!_enabled || !_clientReady)
         return;
 
     if (millis() - _lastReconnectAttempt < 5000)
         return;
     _lastReconnectAttempt = millis();
 
-    String willTopic = _baseTopic.length() > 0
-                           ? _resolveTopic("status")
-                           : _clientId + "/status";
+    const String willTopic = _resolveTopic("status");
+    StaticJsonDocument<128> willDocument;
+    willDocument["schemaVersion"] = 1;
+    willDocument["deviceId"] = _clientId;
+    willDocument["state"] = "offline";
+    String willPayload;
+    serializeJson(willDocument, willPayload);
     if (_mqtt.connect(_clientId.c_str(), _user.c_str(), _pass.c_str(),
-                      willTopic.c_str(), 1, true, "offline"))
+                      willTopic.c_str(), 1, true, willPayload.c_str()))
     {
-        _mqtt.publish(willTopic.c_str(), "online", true);
+        _statusPublished = false;
+        _lastStatusAttemptMs = millis();
+        publishStatus(true);
+        if (!_infoPublished)
+            _infoPublished = publishInfo();
         resubscribeAll();
     }
 }
@@ -178,7 +195,7 @@ void MQTTManager::resubscribeAll()
 
 void MQTTManager::loop()
 {
-    if (!_enabled)
+    if (!_enabled || !_clientReady)
         return;
 
     if (!_mqtt.connected())
@@ -189,6 +206,130 @@ void MQTTManager::loop()
     {
         _mqtt.loop();
     }
+}
+
+void MQTTManager::update(float telemetryValue, bool loraReady, int wifiRssi)
+{
+    _reportedLoraReady = loraReady;
+    _reportedWifiRssi = wifiRssi;
+    loop();
+    if (!_mqtt.connected())
+        return;
+
+    const uint32_t now = millis();
+    if (now - _lastTelemetryMs >= _telemetryIntervalMs && publishTelemetry(telemetryValue))
+        _lastTelemetryMs = now;
+    if ((!_statusPublished || now - _lastStatusMs >= 60000UL) &&
+        now - _lastStatusAttemptMs >= 5000UL)
+    {
+        _lastStatusAttemptMs = now;
+        publishStatus(true);
+    }
+    if (!_infoPublished && now - _lastInfoAttemptMs >= 5000UL)
+    {
+        _lastInfoAttemptMs = now;
+        _infoPublished = publishInfo();
+    }
+}
+
+namespace
+{
+    bool getMqttTimestamp(time_t &timestamp)
+    {
+        timestamp = time(nullptr);
+        return timestamp >= 1577836800;
+    }
+
+    const char *resetReasonName(esp_reset_reason_t reason)
+    {
+        switch (reason)
+        {
+        case ESP_RST_POWERON: return "poweron";
+        case ESP_RST_EXT: return "external";
+        case ESP_RST_SW: return "software";
+        case ESP_RST_PANIC: return "panic";
+        case ESP_RST_INT_WDT: return "interrupt_wdt";
+        case ESP_RST_TASK_WDT: return "task_wdt";
+        case ESP_RST_WDT: return "wdt";
+        case ESP_RST_DEEPSLEEP: return "deep_sleep";
+        case ESP_RST_BROWNOUT: return "brownout";
+        case ESP_RST_SDIO: return "sdio";
+        default: return "unknown";
+        }
+    }
+}
+
+bool MQTTManager::publishTelemetry(float telemetryValue)
+{
+    time_t timestamp = 0;
+    const bool timeSynced = getMqttTimestamp(timestamp);
+    StaticJsonDocument<192> document;
+    document["schemaVersion"] = 1;
+    document["deviceId"] = _clientId;
+    document["seq"] = ++_sequence;
+    document["ts"] = timeSynced ? static_cast<uint32_t>(timestamp) : 0;
+    document["timeSynced"] = timeSynced;
+    document["variable"] = telemetryValue;
+    String payload;
+    serializeJson(document, payload);
+    return publish("telemetry", payload, false);
+}
+
+bool MQTTManager::publishStatus(bool force)
+{
+    const uint32_t now = millis();
+    if (!force && now - _lastStatusMs < 60000UL)
+        return true;
+    _lastStatusAttemptMs = now;
+
+    time_t timestamp = 0;
+    const bool timeSynced = getMqttTimestamp(timestamp);
+    StaticJsonDocument<256> document;
+    document["schemaVersion"] = 1;
+    document["deviceId"] = _clientId;
+    document["state"] = "online";
+    document["ts"] = timeSynced ? static_cast<uint32_t>(timestamp) : 0;
+    document["timeSynced"] = timeSynced;
+    document["uptime"] = millis() / 1000UL;
+    document["wifiRssi"] = _reportedWifiRssi;
+    document["loraReady"] = _reportedLoraReady;
+    document["freeHeap"] = ESP.getFreeHeap();
+    document["minFreeHeap"] = ESP.getMinFreeHeap();
+    String payload;
+    serializeJson(document, payload);
+    if (!publish("status", payload, true))
+        return false;
+    _lastStatusMs = now;
+    _statusPublished = true;
+    return true;
+}
+
+bool MQTTManager::publishInfo()
+{
+    time_t timestamp = 0;
+    const bool timeSynced = getMqttTimestamp(timestamp);
+    StaticJsonDocument<512> document;
+    document["schemaVersion"] = 1;
+    document["deviceId"] = _clientId;
+    document["ts"] = timeSynced ? static_cast<uint32_t>(timestamp) : 0;
+    document["timeSynced"] = timeSynced;
+    document["brand"] = deviceBrand;
+    document["model"] = deviceName;
+    document["firmwareVersion"] = deviceVersion;
+    document["sdkVersion"] = ESP.getSdkVersion();
+    document["chipModel"] = ESP.getChipModel();
+    document["chipRevision"] = ESP.getChipRevision();
+    document["chipCores"] = ESP.getChipCores();
+    document["cpuFrequency"] = ESP.getCpuFreqMHz();
+    document["flashSize"] = ESP.getFlashChipSize();
+    document["sketchSize"] = ESP.getSketchSize();
+    document["sketchMd5"] = ESP.getSketchMD5();
+    document["loraNodeId"] = LORA_NODE_ID;
+    document["loraFrequency"] = LORA_FREQUENCY_MHZ;
+    document["resetReason"] = resetReasonName(esp_reset_reason());
+    String payload;
+    serializeJson(document, payload);
+    return publish("info", payload, true);
 }
 
 bool MQTTManager::publish(const String &topic, const String &payload, bool retain)

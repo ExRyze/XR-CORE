@@ -35,12 +35,6 @@ WebConfig::WebConfig(WiFiManager &wifi, MQTTManager &mqtt, LoRaManager &lora, Du
 //  begin()
 void WebConfig::begin()
 {
-    if (strlen(WEB_AUTH_USERNAME) == 0 || strlen(WEB_AUTH_PASSWORD) < 12)
-    {
-        Serial.println("[ERROR] Web authentication credentials are missing or too short.");
-        return;
-    }
-
     if (!LittleFS.begin(true))
     {
         Serial.println("[ERROR] LittleFS mount failed!");
@@ -140,9 +134,14 @@ void WebConfig::begin()
             return;
         }
 
-        request->send(200, "application/json", _jsonSuccess());
+        if (!_wifi.saveCredentials(ssid, password))
+        {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Unable to save Wi-Fi credentials\"}");
+            return;
+        }
 
-        _wifi.saveCredentials(ssid, password, restartAfterSave); });
+        request->send(200, "application/json", _jsonSuccess());
+        _wifi.applySavedCredentials(restartAfterSave); });
 
     _server.on("/api/wifi/clear", HTTP_POST, [this](AsyncWebServerRequest *request)
                {
@@ -446,6 +445,16 @@ void WebConfig::begin()
                            if (request->method() == HTTP_GET && (request->url().startsWith("/assets/") || request->url() == "/logo.png"))
                            {
                                request->send(LittleFS, request->url());
+                               return;
+                           }
+
+                           if (WEB_AP_AUTO_OPEN && request->method() == HTTP_GET &&
+                               _wifi.getMode() == WiFiMode::ACCESS_POINT)
+                           {
+                               AsyncWebServerResponse *response = request->beginResponse(302, "text/plain", "");
+                               response->addHeader("Location", "http://" + _wifi.getIp() + "/");
+                               response->addHeader("Cache-Control", "no-store");
+                               request->send(response);
                                return;
                            }
 

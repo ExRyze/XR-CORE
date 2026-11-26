@@ -928,7 +928,8 @@
                 document.getElementById('mqtt-password').placeholder = settings.hasPassword ? 'Saved; leave blank to keep' : 'Optional';
                 document.getElementById('mqtt-tls').checked = Boolean(settings.tls);
                 const toggle = document.getElementById('mqtt-feature-toggle');
-                if (settings.enabled) toggle.click();
+                const shouldBeEnabled = Boolean(settings.enabled);
+                if (toggle.getAttribute('aria-checked') !== String(shouldBeEnabled)) toggle.click();
             } catch (error) {
                 showToast('Failed to load MQTT settings.', 'error');
             }

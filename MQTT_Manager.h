@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include "Config.h"
 
 // Provides MQTT publishing, subscriptions, and message callbacks.
 // Only one MQTTManager instance is supported because callbacks use a static instance pointer.
@@ -20,6 +21,7 @@ public:
 
     bool begin();
     void loop();
+    void update(float telemetryValue, bool loraReady, int wifiRssi);
     bool saveSettings(bool enabled, const String &server, uint16_t port,
                       const String &clientId, const String &baseTopic,
                       const String &username, const String &password,
@@ -46,6 +48,9 @@ private:
     String _resolveTopic(const String &topic) const;
     void reconnect();
     void resubscribeAll();
+    bool publishTelemetry(float telemetryValue);
+    bool publishStatus(bool force = false);
+    bool publishInfo();
 
     static void staticCallback(char *topic, byte *payload, unsigned int length);
     void handleMessage(char *topic, byte *payload, unsigned int length);
@@ -61,7 +66,7 @@ private:
     String _pass;
     String _caCert;
     String _baseTopic;
-    bool _useTls = false;
+    bool _useTls = MQTT_USE_TLS;
     Preferences _preferences;
     unsigned long _lastReconnectAttempt = 0;
 
@@ -76,4 +81,15 @@ private:
 
     static MQTTManager *_instance;
     bool _enabled = false;
+    bool _clientReady = false;
+    uint32_t _telemetryIntervalMs = MQTT_TELEMETRY_INTERVAL_MS;
+    uint32_t _lastTelemetryMs = 0;
+    uint32_t _lastStatusMs = 0;
+    uint32_t _lastStatusAttemptMs = 0;
+    uint32_t _lastInfoAttemptMs = 0;
+    uint32_t _sequence = 0;
+    bool _infoPublished = false;
+    bool _reportedLoraReady = false;
+    int _reportedWifiRssi = 0;
+    bool _statusPublished = false;
 };

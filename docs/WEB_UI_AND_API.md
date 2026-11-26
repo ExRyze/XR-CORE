@@ -8,6 +8,10 @@ Keep authored UI changes in `local web/`; generated bundles in `data/assets/` ar
 
 Widget modules include value, value selector/input/dropdown, switch, stepper, status, percentage, chart, image, and push button widgets. The widget README in `local web/README.md` describes supported attributes and examples.
 
+## Access Point captive portal
+
+When `WEB_AP_AUTO_OPEN` in `Config.cpp` is `true`, Access Point mode starts a captive DNS server that resolves hostnames to the AP address, and unknown HTTP GET requests redirect to `/`. This lets phones and computers that perform captive-portal checks open the local login page automatically. Captive-portal pop-up behavior depends on the client operating system. When the option is `false`, users can still open `http://<AP-IP>/` directly.
+
 ## Authentication
 
 Login is performed using `POST /api/auth/login`. Successful login establishes a session cookie. Protected routes require that cookie. Mutating endpoints also validate the `X-Requested-With: XMLHttpRequest` header. Logout uses `POST /api/auth/logout`. Login credentials come from `WEB_AUTH_USERNAME` and `WEB_AUTH_PASSWORD` in `Config.cpp`.

@@ -20,7 +20,7 @@ WebConfig server(wifi, mqtt, lora, telemetry);
 
 TaskHandle_t sensorTaskHandle;
 TaskHandle_t networkTaskHandle;
-bool mqttInitialized = false;
+TaskHandle_t mqttTaskHandle;
 
 void initLedStatus()
 {
@@ -106,6 +106,16 @@ void setup()
         1,
         &networkTaskHandle,
         0);
+
+    // Keep MQTT connection and TLS work off the Wi-Fi management task.
+    xTaskCreatePinnedToCore(
+        mqttTask,
+        "MqttTask",
+        8192,
+        NULL,
+        0,
+        &mqttTaskHandle,
+        1);
 }
 
 void sensorTask(void *parameter)
@@ -181,16 +191,6 @@ void networkTask(void *parameter)
         {
             cloud.begin();
             cloud.loop();
-
-            if (!mqttInitialized)
-            {
-                mqtt.begin();
-                mqttInitialized = true;
-            }
-            else
-            {
-                mqtt.loop();
-            }
         }
         else
         {
@@ -198,6 +198,28 @@ void networkTask(void *parameter)
         }
         lora.loop(telemetry.value());
         updateDataLed();
+
+        vTaskDelay(250 / portTICK_PERIOD_MS);
+    }
+}
+
+void mqttTask(void *parameter)
+{
+    bool mqttInitialized = false;
+    for (;;)
+    {
+        if (wifi.isConnected())
+        {
+            if (!mqttInitialized)
+            {
+                mqtt.begin();
+                mqttInitialized = true;
+            }
+            else
+            {
+                mqtt.update(telemetry.value(), lora.isReady(), wifi.getConnectedRssi());
+            }
+        }
 
         vTaskDelay(250 / portTICK_PERIOD_MS);
     }

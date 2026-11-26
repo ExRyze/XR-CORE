@@ -16,9 +16,17 @@ WiFiManager::WiFiManager()
 //  begin()
 void WiFiManager::begin()
 {
-    pinMode(AP_BUTTON_PIN, INPUT_PULLUP);
-    _lastButtonReading = digitalRead(AP_BUTTON_PIN);
-    _stableButtonState = _lastButtonReading;
+    if (AP_BUTTON_PIN >= 0)
+    {
+        pinMode(AP_BUTTON_PIN, INPUT_PULLUP);
+        _lastButtonReading = digitalRead(AP_BUTTON_PIN);
+        _stableButtonState = _lastButtonReading;
+    }
+    else
+    {
+        _lastButtonReading = HIGH;
+        _stableButtonState = HIGH;
+    }
     _lastButtonChangeMs = millis();
 
     if (isButtonPressed())
@@ -33,12 +41,12 @@ void WiFiManager::begin()
 
     if (hasCredentials)
     {
-        Serial.printf("[INFO] Credential founded: %s\n", savedSsid.c_str());
+        Serial.println("[INFO] Wi-Fi credentials are available in NVS.");
         _startStationMode(savedSsid, savedPassword);
     }
     else
     {
-        Serial.println("[ERROR] Credential not found, starting AP mode...");
+        Serial.println("[INFO] No Wi-Fi credentials are available; starting AP mode.");
         _startAccessPointMode();
     }
 
@@ -75,21 +83,29 @@ void WiFiManager::begin()
 void WiFiManager::loop()
 {
     uint32_t now = millis();
-    bool buttonReading = digitalRead(AP_BUTTON_PIN);
-
-    if (buttonReading != _lastButtonReading)
+    if (_dnsServerStarted)
     {
-        _lastButtonReading = buttonReading;
-        _lastButtonChangeMs = now;
+        _dnsServer.processNextRequest();
     }
 
-    if (now - _lastButtonChangeMs >= _buttonDebounceMs && buttonReading != _stableButtonState)
+    if (AP_BUTTON_PIN >= 0)
     {
-        _stableButtonState = buttonReading;
-        if (_stableButtonState == LOW)
+        bool buttonReading = digitalRead(AP_BUTTON_PIN);
+
+        if (buttonReading != _lastButtonReading)
         {
-            Serial.println("[INFO] AP button pressed; switching to Access Point mode.");
-            forceApMode();
+            _lastButtonReading = buttonReading;
+            _lastButtonChangeMs = now;
+        }
+
+        if (now - _lastButtonChangeMs >= _buttonDebounceMs && buttonReading != _stableButtonState)
+        {
+            _stableButtonState = buttonReading;
+            if (_stableButtonState == LOW)
+            {
+                Serial.println("[INFO] AP button pressed; switching to Access Point mode.");
+                forceApMode();
+            }
         }
     }
 
@@ -110,17 +126,49 @@ void WiFiManager::loop()
     }
 }
 
-// Save Wi-Fi credentials and optionally restart the device.
-void WiFiManager::saveCredentials(const String &ssid, const String &password, bool restartAfterSave)
+// Persist Wi-Fi credentials in NVS.
+bool WiFiManager::saveCredentials(const String &ssid, const String &password)
 {
-    _prefs.begin("wifi-config", false);
-    _prefs.putString("ssid", ssid);
+    if (ssid.length() == 0 || !_prefs.begin("wifi-config", false))
+    {
+        Serial.println("[ERROR] Unable to open Wi-Fi credential storage.");
+        return false;
+    }
+
+    const bool hadSsid = _prefs.isKey("ssid");
+    const String previousSsid = _prefs.getString("ssid", "");
+    const String previousPassword = _prefs.getString("password", "");
+    const size_t ssidBytes = _prefs.putString("ssid", ssid);
     _prefs.putString("password", password);
-    _prefs.putBool("credentialsReset", false);
+    const bool saved = ssidBytes > 0 &&
+                       _prefs.isKey("password") &&
+                       _prefs.getString("ssid", "") == ssid &&
+                       _prefs.getString("password", "") == password;
+
+    if (!saved)
+    {
+        if (hadSsid)
+        {
+            _prefs.putString("ssid", previousSsid);
+            _prefs.putString("password", previousPassword);
+        }
+        else
+        {
+            _prefs.remove("ssid");
+            _prefs.remove("password");
+        }
+        _prefs.end();
+        Serial.println("[ERROR] Failed to save Wi-Fi credentials to NVS.");
+        return false;
+    }
     _prefs.end();
 
-    Serial.printf("[INFO] Credential saved, SSID: %s.\n", ssid.c_str());
+    Serial.println("[INFO] Wi-Fi credentials saved to NVS.");
+    return true;
+}
 
+void WiFiManager::applySavedCredentials(bool restartAfterSave)
+{
     if (restartAfterSave)
     {
         Serial.println("[INFO] Restarting device to apply WiFi changes...");
@@ -152,7 +200,7 @@ void WiFiManager::clearCredentials()
     _prefs.begin("wifi-config", false);
     _prefs.remove("ssid");
     _prefs.remove("password");
-    _prefs.putBool("credentialsReset", true);
+    _prefs.remove("credentialsReset");
     _prefs.end();
 
     _apPassword = "";
@@ -175,6 +223,11 @@ bool WiFiManager::isConnected() const { return _mode.load() == WiFiMode::STATION
 
 bool WiFiManager::isButtonPressed() const
 {
+    if (AP_BUTTON_PIN < 0)
+    {
+        return false;
+    }
+
     if (digitalRead(AP_BUTTON_PIN) == LOW)
     {
         return true;
@@ -282,38 +335,58 @@ String WiFiManager::getTime(const char *format) const
 // Load saved Wi-Fi credentials.
 bool WiFiManager::_loadCredentials(String &ssid, String &password)
 {
-    _prefs.begin("wifi-config", true);
-    ssid = _prefs.getString("ssid", "");
-    password = _prefs.getString("password", "");
-    bool credentialsReset = _prefs.getBool("credentialsReset", false);
-    _prefs.end();
+    if (_prefs.begin("wifi-config", true))
+    {
+        ssid = _prefs.getString("ssid", "");
+        password = _prefs.getString("password", "");
+        _prefs.end();
+    }
+    else
+    {
+        // A read-only open fails when this namespace has not been created yet.
+        ssid = "";
+        password = "";
+        Serial.println("[INFO] Wi-Fi credential namespace is not present in NVS yet.");
+    }
 
     if (ssid.length() > 0)
     {
         return true;
     }
 
-    // Reset removes credentials and prevents Config.cpp defaults from returning.
-    if (credentialsReset)
-    {
-        ssid = "";
-        password = "";
-        return false;
-    }
-
-    // Migrate file-based credentials to Preferences only once on first boot.
+    // Copy configured defaults into Preferences before using them.
     if (WIFI_SSID != nullptr && WIFI_SSID[0] != '\0')
     {
         ssid = String(WIFI_SSID);
         password = (WIFI_PASSWORD != nullptr) ? String(WIFI_PASSWORD) : String("");
 
-        _prefs.begin("wifi-config", false);
-        _prefs.putString("ssid", ssid);
+        if (!_prefs.begin("wifi-config", false))
+        {
+            ssid = "";
+            password = "";
+            Serial.println("[ERROR] Unable to open NVS to save default Wi-Fi credentials.");
+            return false;
+        }
+
+        const size_t ssidBytes = _prefs.putString("ssid", ssid);
         _prefs.putString("password", password);
-        _prefs.putBool("credentialsReset", false);
+        const bool saved = ssidBytes > 0 &&
+                           _prefs.isKey("password") &&
+                           _prefs.getString("ssid", "") == ssid &&
+                           _prefs.getString("password", "") == password;
+        if (!saved)
+        {
+            _prefs.remove("ssid");
+            _prefs.remove("password");
+            ssid = "";
+            password = "";
+            _prefs.end();
+            Serial.println("[ERROR] Failed to persist default Wi-Fi credentials; starting AP mode.");
+            return false;
+        }
         _prefs.end();
 
-        Serial.printf("[INFO] Credential loaded from Config.cpp: %s\n", ssid.c_str());
+        Serial.println("[INFO] Default Wi-Fi credentials copied from Config.cpp to NVS.");
         return true;
     }
 
@@ -325,6 +398,12 @@ bool WiFiManager::_loadCredentials(String &ssid, String &password)
 // Start Wi-Fi Station mode.
 void WiFiManager::_startStationMode(const String &ssid, const String &password)
 {
+    if (_dnsServerStarted)
+    {
+        _dnsServer.stop();
+        _dnsServerStarted = false;
+    }
+
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), password.c_str());
 
@@ -337,6 +416,12 @@ void WiFiManager::_startStationMode(const String &ssid, const String &password)
 // Start Wi-Fi Access Point mode.
 bool WiFiManager::_startAccessPointMode()
 {
+    if (_dnsServerStarted)
+    {
+        _dnsServer.stop();
+        _dnsServerStarted = false;
+    }
+
     WiFi.disconnect(true);
     WiFi.mode(WIFI_AP);
 
@@ -370,6 +455,18 @@ bool WiFiManager::_startAccessPointMode()
     }
 
     _mode.store(WiFiMode::ACCESS_POINT);
+    if (WEB_AP_AUTO_OPEN)
+    {
+        _dnsServerStarted = _dnsServer.start(53, "*", WiFi.softAPIP());
+        if (_dnsServerStarted)
+        {
+            Serial.printf("[INFO] Captive portal DNS started at %s.\n", WiFi.softAPIP().toString().c_str());
+        }
+        else
+        {
+            Serial.println("[WARN] Captive portal DNS failed to start; use the AP IP address directly.");
+        }
+    }
     Serial.printf("[INFO] AP mode activated - SSID: %s, IP: %s\n",
                   AP_SSID, getIp().c_str());
     return true;
