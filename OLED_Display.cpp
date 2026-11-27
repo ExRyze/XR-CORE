@@ -1,7 +1,3 @@
-// Author : ExRyze
-// Device : OLED 0.96 inch
-// Version : 1.1.0
-
 #include "OLED_Display.h"
 #include <LittleFS.h>
 #include <memory>

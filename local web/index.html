@@ -67,14 +67,12 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
-                    data-decimals="2" data-color="primary" data-icon="thermometer" class="contents"></div>
-                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
-                    data-decimals="2" data-color="success" data-icon="activity" class="contents"></div>
-                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
-                    data-decimals="2" data-color="info" data-icon="droplets" class="contents"></div>
-                <div data-widget="value" data-api-url="/api/dummy/telemetry" data-unit="°C" data-poll-interval-ms="2000"
-                    data-decimals="2" data-color="warning" data-icon="gauge" class="contents"></div>
+                <div data-widget="value" data-title="Temperature (filtered)" data-label="BME680" data-api-url="/api/telemetry/bme680"
+                    data-unit="°C" data-poll-interval-ms="2000" data-decimals="2" data-color="primary"
+                    data-icon="thermometer" class="contents"></div>
+                <div data-widget="value" data-title="Temperature (raw)" data-label="BME680" data-api-url="/api/telemetry/bme680"
+                    data-value-path="rawValue" data-unit="°C" data-poll-interval-ms="2000" data-decimals="2"
+                    data-color="info" data-icon="activity" class="contents"></div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -83,22 +81,24 @@
                     data-decimals="0" class="contents"></div>
                 <div data-widget="value-input" data-title="Set point" data-icon="sliders-horizontal"
                     data-color="primary" data-value="22" data-min="16" data-max="30" data-step="1" data-unit="°C"
-                    data-decimals="0" data-api-url="/api/dummy/telemetry" class="contents"></div>
+                    data-decimals="0" class="contents"></div>
                 <div data-widget="value-dropdown" data-title="Fan speed" data-icon="fan" data-color="info"
                     data-choices='["Auto","Low","Medium","High"]' data-value="Auto" class="contents"></div>
                 <div data-widget="value-selector" data-title="Fan mode" data-icon="fan" data-color="info"
-                    data-value="Auto" data-choices='["Auto","Low","Medium","High"]' data-api-url="/api/dummy/telemetry"
+                    data-value="Auto" data-choices='["Auto","Low","Medium","High"]'
                     class="contents"></div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div data-widget="status" data-title="Water pump" data-icon="waves" data-color="success"
-                    data-value="Online" data-detail="Idle · 24 min" class="contents"></div>
+                <div data-widget="status" data-title="BME680 sensor" data-icon="thermometer" data-color="success"
+                    data-value="Pending" data-detail="Waiting for sensor data" data-api-url="/api/telemetry/bme680"
+                    data-value-path="status" data-detail-path="detail" data-poll-interval-ms="2000"
+                    class="contents"></div>
                 <div data-widget="slider" data-title="Water level" data-icon="waves" data-color="primary"
                     data-value="55" data-min="0" data-max="100" data-step="1" data-unit="%" data-decimals="0"
-                    data-api-url="/api/dummy/telemetry" class="contents"></div>
+                    class="contents"></div>
                 <div data-widget="push-button" data-title="Start irrigation" data-icon="sprout" data-color="success"
-                    data-label="Start" data-value="true" data-api-url="/api/dummy/telemetry"
+                    data-label="Start" data-value="true"
                     data-busy-label="Starting..." class="contents"></div>
                 <div data-widget="switch" data-title="Grow light" data-icon="lightbulb" data-color="warning"
                     data-value="true" data-on-label="On · Auto" data-off-label="Off" class="contents"></div>
@@ -119,8 +119,10 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
-                <div data-widget="chart" data-title="Temperature &amp; humidity" data-label="History"
+                <div data-widget="chart" data-title="BME680 temperature" data-label="History"
                     data-icon="activity" data-color="primary" data-col-span="xl:col-span-2" data-chart-type="line"
+                    data-api-url="/api/telemetry/bme680/history" data-range-param="range" data-poll-interval-ms="5000"
+                    data-ranges='[{"value":"60000","label":"1 min"},{"value":"180000","label":"3 min"},{"value":"300000","label":"5 min"}]'
                     class="contents"></div>
                 <div data-widget="image" data-title="Greenhouse camera" data-label="Image" data-icon="image"
                     data-color="primary" data-col-span="xl:col-span-2" data-image-url="/logo.png"

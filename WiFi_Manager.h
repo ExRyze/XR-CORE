@@ -1,9 +1,5 @@
 #pragma once
 
-// Author : ExRyze
-// Device : ESP32
-// Version : 1.1.0
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Preferences.h>

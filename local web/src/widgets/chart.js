@@ -92,7 +92,9 @@ export function mountChartWidget(container, config = {}) {
   const canvas = body.querySelector('[data-chart]');
   const chart = new Chart(canvas, {
     type: options.chartType,
-    data: formatChartData(DEMO_DATA[selectedRange] || makeFallbackData(selectedRange)),
+    data: options.apiUrl
+      ? { labels: [], datasets: [] }
+      : formatChartData(DEMO_DATA[selectedRange] || makeFallbackData(selectedRange)),
     options: {
       responsive: true,
       maintainAspectRatio: false,

@@ -15,7 +15,7 @@ ESP32 firmware for the XR-CORE device. The project combines a Wi-Fi configuratio
 
 ## Features
 
-- FreeRTOS sensor/application and network tasks pinned to ESP32 cores.
+- FreeRTOS sensor/application and network tasks pinned to ESP32 cores, with a BME680 temperature sensor module.
 - Persistent Wi-Fi credentials, station/access-point modes, Wi-Fi scanning, and an AP-mode button.
 - OLED dashboard with device, Wi-Fi, and logo pages.
 - LittleFS-hosted authenticated web dashboard and configuration APIs.
@@ -33,12 +33,15 @@ Feature defaults in `Config.cpp` disable MQTT, LoRa, and Arduino IoT Cloud. Devi
 | `WiFi_Manager.*` | Wi-Fi lifecycle, saved credentials, scanning, time, and AP-mode button behavior. |
 | `Web_Config.*` | Async web server, dashboard file serving, session authentication, and device configuration APIs. |
 | `OLED_Display.*` | SSD1306 drawing helpers and LittleFS bitmap display. |
-| `DummyTelemetry.*` | Demo telemetry value used by the dashboard. |
+| `Telemetry_Manager.*` | Telemetry manager used by the dashboard and network transports. |
 | `MQTT_Manager.*` | MQTT settings, reconnect, TLS, publish/subscribe, and callbacks. |
 | `LoRa_Manager.*` | LoRa radio initialization and persisted radio settings. |
 | `ArduinoCloud_Manager.*` | Arduino IoT Cloud connection lifecycle. |
 | `ESP_Device.*` | ESP32 chip, memory, flash, and sketch diagnostics. |
 | `Sensor_Filter.*` | Sensor filtering utility. |
+| `Sensor_Interface.h`, `Sensor_Types.h`, `Sensor_Manager.*` | Common sensor lifecycle, snapshot types, and registration/update coordinator. |
+| `BME680_Sensor.*` | BME680 temperature acquisition module with moving-average, median, or cumulative-mean filtering. |
+| `Telemetry_Package.h`, `Telemetry_Manager.*` | Validated raw/filtered sensor data package shared with output subsystems. |
 | `partitions.csv` | Custom 4 MB flash layout with OTA slots and a SPIFFS-compatible filesystem partition used by LittleFS. |
 | `data/` | LittleFS image contents: production UI, assets, logo, and optional MQTT CA certificate at runtime. |
 | `local web/` | Vite-based dashboard source and widget modules. |
@@ -81,7 +84,7 @@ Wi-Fi credentials and user-adjustable MQTT/LoRa settings are persisted with ESP3
 
 ## Web interface
 
-The frontend source lives in `local web/`, with widget modules under `local web/src/widgets/`. Use `npm run dev` for local frontend development and `npm run build` to regenerate the production files in `data/`. The dummy telemetry endpoint demonstrates live dashboard polling; it is not connected to a physical sensor yet.
+The frontend source lives in `local web/`, with widget modules under `local web/src/widgets/`. Use `npm run dev` for local frontend development and `npm run build` to regenerate the production files in `data/`. The BME680 telemetry API feeds the temperature, sensor-status, and history-chart widgets; the other demo controls remain local UI examples.
 
 ## Documentation
 
@@ -89,8 +92,18 @@ The frontend source lives in `local web/`, with widget modules under `local web/
 - [Build and upload](docs/BUILD_AND_UPLOAD.md)
 - [Configuration and security](docs/CONFIGURATION.md)
 - [Hardware notes](docs/HARDWARE.md)
+- [Sensor modules](docs/SENSOR_MODULES.md)
 - [Web UI and API](docs/WEB_UI_AND_API.md)
 - [Maintenance](docs/MAINTENANCE.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
+
+## License
+
+XR-CORE is licensed under the Apache License 2.0.
+
+You are free to use, modify, and distribute this project
+under the terms and conditions of the license.
+
+See the [LICENSE](LICENSE) file for the complete license text.

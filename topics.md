@@ -14,7 +14,7 @@ All timestamps are Unix seconds in UTC. When NTP has not synchronized, `ts` is `
 
 ## Telemetry
 
-The current firmware exposes its sample value as `variable`. Replace this placeholder with named sensor fields when the production sensor model is defined.
+The telemetry payload mirrors the validated package and contains raw and filtered BME680 temperature. `ts` is UTC publish time when NTP is available; `timestampMs` is the ESP32 monotonic time of the sensor sample.
 
 ```json
 {
@@ -23,11 +23,20 @@ The current firmware exposes its sample value as `variable`. Replace this placeh
   "seq": 1042,
   "ts": 1795667400,
   "timeSynced": true,
-  "variable": 24.5
+  "source": "bme680",
+  "measurement": "temperature",
+  "rawValue": 24.7,
+  "filteredValue": 24.5,
+  "unit": "C",
+  "filter": "MOVING_AVERAGE",
+  "initialized": true,
+  "online": true,
+  "valid": true,
+  "timestampMs": 42000
 }
 ```
 
-`seq` increments for each telemetry publish attempt. The sample payload is not retained.
+The `source`, `measurement`, `rawValue`, `filteredValue`, `unit`, `filter`, lifecycle, validity, and sample timestamp fields mirror the validated telemetry package. `seq` increments for each telemetry publish attempt. The sample payload is not retained. No telemetry message is sent until the package is valid.
 
 ## Status
 

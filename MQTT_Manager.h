@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include "Config.h"
+#include "Telemetry_Manager.h"
 
 // Provides MQTT publishing, subscriptions, and message callbacks.
 // Only one MQTTManager instance is supported because callbacks use a static instance pointer.
@@ -21,7 +22,7 @@ public:
 
     bool begin();
     void loop();
-    void update(float telemetryValue, bool loraReady, int wifiRssi);
+    void update(const TelemetryManager &telemetry, bool loraReady, int wifiRssi);
     bool saveSettings(bool enabled, const String &server, uint16_t port,
                       const String &clientId, const String &baseTopic,
                       const String &username, const String &password,
@@ -48,7 +49,7 @@ private:
     String _resolveTopic(const String &topic) const;
     void reconnect();
     void resubscribeAll();
-    bool publishTelemetry(float telemetryValue);
+    bool publishTelemetry(const TelemetryPackage &package);
     bool publishStatus(bool force = false);
     bool publishInfo();
 

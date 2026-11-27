@@ -6,7 +6,7 @@
 
 | Task | Core | Main work |
 | --- | --- | --- |
-| `SensorTask` | 1 | Updates demo telemetry every pass, rotates OLED pages every 20 seconds, and refreshes the display every 250 ms. |
+| `SensorTask` | 1 | Updates the BME680 module and telemetry history, rotates OLED pages every 20 seconds, and refreshes the display every 250 ms. |
 | `NetworkTask` | 0 | Services Wi-Fi, Arduino IoT Cloud, LoRa, and the data LED every 250 ms. |
 | `MqttTask` | 1 | Runs at priority 0 and initializes/services MQTT while Wi-Fi is connected, keeping broker and TLS connection work off `NetworkTask`. |
 
@@ -17,7 +17,8 @@ The Arduino `loop()` intentionally idles because application work runs in the ex
 - **Wi-Fi**: `WiFiManager` gives saved NVS credentials priority. When the NVS namespace or SSID is absent, it copies configured defaults into NVS before attempting station mode; without either source, it starts AP mode. It falls back to AP mode after a connection timeout, handles the configured AP button when its pin is non-negative, and provides scan/status helpers. With `WEB_AP_AUTO_OPEN` enabled, it also runs captive DNS in AP mode. It synchronizes time for the OLED clock.
 - **Web**: `WebConfig` mounts LittleFS and serves the dashboard, login page, and authenticated endpoints using ESPAsyncWebServer. Session state is maintained by the firmware.
 - **Display**: `OLEDDisplay` wraps Adafruit SSD1306 drawing operations. Its bitmap helper reads packed monochrome bytes from LittleFS.
-- **Telemetry**: `DummyTelemetry` produces a demonstration value. It uses a critical section to protect access across tasks.
+- **Telemetry**: `TelemetryManager` validates sensor snapshots and packages source, status, timestamp, filter, raw, and filtered values into `TelemetryPackage` for consumers.
+- **Sensors**: `SensorManager` updates the registered `BME680Sensor` in `SensorTask`. The module retains raw and filtered temperature separately and supports selectable filters.
 - **MQTT**: `MQTTManager` wraps PubSubClient and supports plain or TLS clients, CA material from LittleFS, Preferences-backed settings, subscriptions, callbacks, and the telemetry/status/info topic payloads. The configured enabled state is separate from client readiness, so missing TLS CA material does not mark the feature as disabled in the web settings.
 - **LoRa**: `LoRaManager` uses RadioLib, persists radio parameters, transmits a JSON telemetry packet every 10 seconds, and reads received packets from the network task. RadioLib's transmit call blocks that task for the packet airtime.
 - **Cloud**: `ArduinoCloudManager` owns Arduino IoT Cloud initialization and loop processing.
@@ -37,4 +38,4 @@ Some feature settings are latched during module initialization. After changing s
 
 ## Known scope
 
-The current OLED dashboard uses placeholder values, and `DummyTelemetry` is demonstration data. Physical sensor integration and production transport security are outside the current implementation. LoRa currently sends the node ID, sequence number, and demo telemetry value as JSON; received payloads are logged to Serial.
+The OLED dashboard shows BME680 temperature on its sensor page. The local web BME680 telemetry and history endpoints and MQTT telemetry consume the validated package. The existing LoRa scalar call also reads the telemetry compatibility value. Arduino IoT Cloud has not been connected to sensor telemetry. See `docs/SENSOR_MODULES.md` for the sensor module and aggregate telemetry contract.

@@ -20,8 +20,8 @@ The generic value widget is configured in `index.html` like this:
 
 ```html
 <div data-widget="value"
-     data-api-url="/api/dummy/telemetry"
-     data-title="Dummy temperature"
+     data-api-url="/api/telemetry/{sensor}"
+     data-title="Variable"
      data-unit="°C"
      data-poll-interval-ms="2000"
      data-decimals="2"
@@ -30,10 +30,23 @@ The generic value widget is configured in `index.html` like this:
      data-value-path="value"></div>
 ```
 
-Add another mount point with different attributes to create another widget instance. Supported colors are `primary`, `success`, `warning`, `danger`, `info`, and `neutral`. Icons are Lucide names registered in `src/main.js`; currently registered options include `activity`, `battery`, `droplets`, `gauge`, `thermometer`, `wind`, and the other icons used by the dashboard. The widget renders only its title and value. The API response for the dummy endpoint is:
+Add another mount point with different attributes to create another widget instance. Supported colors are `primary`, `success`, `warning`, `danger`, `info`, and `neutral`. Icons are Lucide names registered in `src/main.js`; currently registered options include `activity`, `battery`, `droplets`, `gauge`, `thermometer`, `wind`, and the other icons used by the dashboard. The widget renders only its title and value. The BME680 package endpoint returns:
 
 ```json
-{"value":24.31,"unit":"°C","updatedAt":123456}
+{
+  "source":"bme680",
+  "measurement":"temperature",
+  "value":24.31,
+  "rawValue":24.40,
+  "filteredValue":24.31,
+  "unit":"C",
+  "filter":"MOVING_AVERAGE",
+  "initialized":true,
+  "online":true,
+  "valid":true,
+  "timestampMs":123456,
+  "updatedAt":123456
+}
 ```
 
 The endpoint requires the same authenticated session as the other device APIs.

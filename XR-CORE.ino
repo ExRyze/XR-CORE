@@ -1,3 +1,6 @@
+// Copyright 2026 ExRyze
+// SPDX-License-Identifier: Apache-2.0
+
 #include <Arduino.h>
 #include "Config.h"
 #include "ESP_Device.h"
@@ -6,7 +9,9 @@
 #include "Web_Config.h"
 #include "MQTT_Manager.h"
 #include "LoRa_Manager.h"
-#include "DummyTelemetry.h"
+#include "Telemetry_Manager.h"
+#include "Sensor_Manager.h"
+#include "BME680_Sensor.h"
 #include "ArduinoCloud_Manager.h"
 
 ESPDevice espDevice;
@@ -14,7 +19,9 @@ WiFiManager wifi;
 OLEDDisplay oled;
 MQTTManager mqtt(MQTT_SERVER, MQTT_PORT, MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);
 LoRaManager lora;
-DummyTelemetry telemetry;
+SensorManager sensorManager;
+TelemetryManager telemetry(sensorManager);
+BME680Sensor bme680Sensor;
 ArduinoCloudManager cloud;
 WebConfig server(wifi, mqtt, lora, telemetry);
 
@@ -76,6 +83,9 @@ void setup()
         }
     }
 
+    sensorManager.addSensor(bme680Sensor);
+    sensorManager.begin();
+
     oled.showSplash(deviceBrand, String(deviceName) + " " + deviceVersion);
 
     wifi.begin();
@@ -127,7 +137,8 @@ void sensorTask(void *parameter)
 
     for (;;)
     {
-        telemetry.update();
+        if (sensorManager.update(millis()))
+            telemetry.update();
         uint32_t now = millis();
 
         if (now - lastPageChangeMs >= PAGE_INTERVAL_MS)
@@ -142,13 +153,21 @@ void sensorTask(void *parameter)
         switch (page)
         {
         case 0: // Dashboard
-            oled.showKeyValue(1, "VAR", "-");
-            oled.showKeyValue(2, "VAR", "-");
-            oled.showKeyValue(3, "VAR", "-", 62);
-            oled.showKeyValue(4, "VAR", "-", 62);
-            oled.showKeyValue(3, "VAR", "-", 62, 66);
-            oled.showKeyValue(4, "VAR", "-", 62, 66);
+        {
+            const TelemetryPackage package = telemetry.getTemperaturePackage();
+
+            const char *filterLabel = "AVG";
+            if (package.filter == "MEDIAN")
+                filterLabel = "MEDIAN";
+            else if (package.filter == "CUMULATIVE_MEAN")
+                filterLabel = "MEAN";
+
+            oled.showKeyValue(1, "TEMP", package.valid ? String(package.filteredValue, 2) + " C" : "--");
+            oled.showKeyValue(2, "RAW", package.valid ? String(package.rawValue, 2) + " C" : "--");
+            oled.showKeyValue(3, "SENSOR", package.online ? "ONLINE" : "OFFLINE");
+            oled.showKeyValue(4, "FILTER", filterLabel);
             break;
+        }
 
         case 1: // WiFi Config
             if (wifi.getMode() == WiFiMode::ACCESS_POINT)
@@ -217,7 +236,7 @@ void mqttTask(void *parameter)
             }
             else
             {
-                mqtt.update(telemetry.value(), lora.isReady(), wifi.getConnectedRssi());
+                mqtt.update(telemetry, lora.isReady(), wifi.getConnectedRssi());
             }
         }
 

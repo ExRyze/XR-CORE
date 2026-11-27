@@ -1,11 +1,8 @@
-// Author : ExRyze
-// Device : ESP32
-// Version : 1.1.0
-
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <esp_system.h>
 #include <cstdlib>
+#include <cstdio>
 #include "Web_Config.h"
 #include "ESP_Device.h"
 #include "Config.h"
@@ -27,7 +24,7 @@ namespace
 }
 
 //  Constructor
-WebConfig::WebConfig(WiFiManager &wifi, MQTTManager &mqtt, LoRaManager &lora, DummyTelemetry &telemetry)
+WebConfig::WebConfig(WiFiManager &wifi, MQTTManager &mqtt, LoRaManager &lora, TelemetryManager &telemetry)
     : _server(SERVER_PORT), _wifi(wifi), _mqtt(mqtt), _lora(lora), _telemetry(telemetry)
 {
 }
@@ -418,14 +415,30 @@ void WebConfig::begin()
         }
         request->send(200, "application/json", "{\"status\":\"ok\",\"restartRequired\":true}"); });
 
-    // Telemetry
-    // format: (/api/{sensor}/{command})
-    _server.on("/api/dummy/telemetry", HTTP_GET, [this](AsyncWebServerRequest *request)
+    // BME680 telemetry package
+    _server.on("/api/telemetry/bme680", HTTP_GET, [this](AsyncWebServerRequest *request)
                {
                    if (!_requireAuthentication(request)) return;
-                   String json = "{\"value\":" + String(_telemetry.value(), 2) +
-                                 ",\"unit\":\"°C\",\"updatedAt\":" + String(_telemetry.updatedAt()) + "}";
-                   request->send(200, "application/json", json); });
+                   request->send(200, "application/json", _jsonBME680Telemetry()); });
+
+    _server.on("/api/telemetry/bme680/history", HTTP_GET, [this](AsyncWebServerRequest *request)
+               {
+                   if (!_requireAuthentication(request)) return;
+                   uint32_t rangeMs = 60000UL;
+                   if (request->hasParam("range"))
+                   {
+                       const String rangeValue = request->getParam("range")->value();
+                       char *end = nullptr;
+                       const unsigned long parsedRange = strtoul(rangeValue.c_str(), &end, 10);
+                       if (end == rangeValue.c_str() || *end != '\0' ||
+                           (parsedRange != 60000UL && parsedRange != 180000UL && parsedRange != 300000UL))
+                       {
+                           request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Unsupported telemetry history range.\"}");
+                           return;
+                       }
+                       rangeMs = static_cast<uint32_t>(parsedRange);
+                   }
+                   request->send(200, "application/json", _jsonBME680History(rangeMs)); });
 
     // Fallback
     _server.onNotFound([this](AsyncWebServerRequest *request)
@@ -643,6 +656,89 @@ String WebConfig::_jsonDeviceStatus()
 
     String json;
     serializeJson(doc, json);
+    return json;
+}
+
+String WebConfig::_jsonBME680Telemetry() const
+{
+    const TelemetryPackage package = _telemetry.getTemperaturePackage();
+    StaticJsonDocument<384> doc;
+    doc["source"] = package.source;
+    doc["measurement"] = package.measurement;
+    if (package.valid)
+    {
+        doc["value"] = package.filteredValue;
+        doc["rawValue"] = package.rawValue;
+        doc["filteredValue"] = package.filteredValue;
+    }
+    else
+    {
+        doc["value"] = nullptr;
+        doc["rawValue"] = nullptr;
+        doc["filteredValue"] = nullptr;
+    }
+    doc["unit"] = package.unit;
+    doc["filter"] = package.filter;
+    doc["initialized"] = package.initialized;
+    doc["online"] = package.online;
+    doc["valid"] = package.valid;
+    doc["status"] = package.valid ? "Online" : (package.online ? "Pending" : "Offline");
+    if (package.valid)
+        doc["detail"] = String("Valid temperature · ") + package.filter;
+    else
+        doc["detail"] = "Waiting for a valid temperature";
+    doc["timestampMs"] = package.timestampMs;
+    doc["updatedAt"] = package.timestampMs;
+
+    String json;
+    serializeJson(doc, json);
+    return json;
+}
+
+String WebConfig::_jsonBME680History(uint32_t rangeMs) const
+{
+    TelemetryHistory history;
+    _telemetry.getHistory(rangeMs, history);
+
+    String json;
+    json.reserve(192 + history.count * 30);
+    json = "{\"source\":\"bme680\",\"measurement\":\"temperature\",\"rangeMs\":";
+    json += String(rangeMs);
+    json += ",\"valid\":";
+    json += history.count > 0 ? "true" : "false";
+    json += ",\"labels\":[";
+
+    const uint32_t firstTimestamp = history.count > 0 ? history.points[0].timestampMs : 0;
+    char formatBuffer[24];
+    for (uint16_t i = 0; i < history.count; ++i)
+    {
+        if (i > 0)
+            json += ',';
+        const uint32_t elapsedSeconds = (history.points[i].timestampMs - firstTimestamp) / 1000UL;
+        snprintf(formatBuffer, sizeof(formatBuffer), "%lus", static_cast<unsigned long>(elapsedSeconds));
+        json += '"';
+        json += formatBuffer;
+        json += '"';
+    }
+
+    json += "],\"datasets\":[{\"label\":\"Raw temperature (C)\",\"data\":[";
+    for (uint16_t i = 0; i < history.count; ++i)
+    {
+        if (i > 0)
+            json += ',';
+        snprintf(formatBuffer, sizeof(formatBuffer), "%.2f", history.points[i].rawValue);
+        json += formatBuffer;
+    }
+
+    json += "]},{\"label\":\"Filtered temperature (C)\",\"data\":[";
+    for (uint16_t i = 0; i < history.count; ++i)
+    {
+        if (i > 0)
+            json += ',';
+        snprintf(formatBuffer, sizeof(formatBuffer), "%.2f", history.points[i].filteredValue);
+        json += formatBuffer;
+    }
+    json += "]}]}";
     return json;
 }
 

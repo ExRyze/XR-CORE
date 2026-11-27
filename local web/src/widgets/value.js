@@ -46,6 +46,10 @@ export function mountValueWidget(container, options = {}) {
       if (!response.ok) throw new Error(`Value request failed (${response.status})`);
       const payload = await response.json();
       const value = config.valuePath.split('.').reduce((current, key) => current?.[key], payload);
+      if (payload.valid === false || value == null) {
+        valueElement.textContent = '--';
+        return;
+      }
       if (!Number.isFinite(Number(value))) throw new Error(`Value at "${config.valuePath}" is invalid`);
 
       valueElement.textContent = Number(value).toFixed(decimals);

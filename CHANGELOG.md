@@ -8,3 +8,6 @@
 - Documented firmware modules, web UI workflow, hardware defaults, configuration, and build/upload procedures.
 - Recorded the supplied ESP32 Arduino core and library versions and compile-size reference.
 - Added repository guidance for provisioning, LittleFS assets, and optional integrations.
+- Added BME680 temperature acquisition with moving-average, median, and cumulative-mean filters.
+- Added sensor and telemetry manager abstractions, validated telemetry packages, and in-memory temperature history.
+- Added authenticated web package/history endpoints, MQTT sensor fields, OLED temperature status, and BME680 dashboard widgets.

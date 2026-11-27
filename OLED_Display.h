@@ -1,9 +1,5 @@
 #pragma once
 
-// Author : ExRyze
-// Device : OLED 0.96 inch
-// Version : 1.1.0
-
 #include <Wire.h>
 #include <Adafruit_GFX.h>     // library: adafruit/Adafruit-GFX-Library
 #include <Adafruit_SSD1306.h> // library: adafruit/Adafruit_SSD1306

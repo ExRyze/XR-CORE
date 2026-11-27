@@ -208,7 +208,7 @@ void MQTTManager::loop()
     }
 }
 
-void MQTTManager::update(float telemetryValue, bool loraReady, int wifiRssi)
+void MQTTManager::update(const TelemetryManager &telemetry, bool loraReady, int wifiRssi)
 {
     _reportedLoraReady = loraReady;
     _reportedWifiRssi = wifiRssi;
@@ -217,8 +217,19 @@ void MQTTManager::update(float telemetryValue, bool loraReady, int wifiRssi)
         return;
 
     const uint32_t now = millis();
-    if (now - _lastTelemetryMs >= _telemetryIntervalMs && publishTelemetry(telemetryValue))
-        _lastTelemetryMs = now;
+    if (now - _lastTelemetryMs >= _telemetryIntervalMs)
+    {
+        const TelemetryPackage package = telemetry.getTemperaturePackage();
+        if (package.valid)
+        {
+            if (publishTelemetry(package))
+                _lastTelemetryMs = now;
+        }
+        else
+        {
+            _lastTelemetryMs = now;
+        }
+    }
     if ((!_statusPublished || now - _lastStatusMs >= 60000UL) &&
         now - _lastStatusAttemptMs >= 5000UL)
     {
@@ -259,17 +270,26 @@ namespace
     }
 }
 
-bool MQTTManager::publishTelemetry(float telemetryValue)
+bool MQTTManager::publishTelemetry(const TelemetryPackage &package)
 {
     time_t timestamp = 0;
     const bool timeSynced = getMqttTimestamp(timestamp);
-    StaticJsonDocument<192> document;
+    StaticJsonDocument<512> document;
     document["schemaVersion"] = 1;
     document["deviceId"] = _clientId;
     document["seq"] = ++_sequence;
     document["ts"] = timeSynced ? static_cast<uint32_t>(timestamp) : 0;
     document["timeSynced"] = timeSynced;
-    document["variable"] = telemetryValue;
+    document["source"] = package.source;
+    document["measurement"] = package.measurement;
+    document["rawValue"] = package.rawValue;
+    document["filteredValue"] = package.filteredValue;
+    document["unit"] = package.unit;
+    document["filter"] = package.filter;
+    document["initialized"] = package.initialized;
+    document["online"] = package.online;
+    document["valid"] = package.valid;
+    document["timestampMs"] = package.timestampMs;
     String payload;
     serializeJson(document, payload);
     return publish("telemetry", payload, false);

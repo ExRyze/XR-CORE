@@ -1,7 +1,3 @@
-// Author : ExRyze
-// Device : ESP32
-// Version : 1.1.0
-
 #include "WiFi_Manager.h"
 #include <esp_system.h>
 

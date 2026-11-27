@@ -36,6 +36,7 @@ The attached compile log used ESP32 core libraries WiFi, Networking, Preferences
 | ArduinoHttpClient | 0.6.2 |
 | RadioLib | 8.0.0 |
 | ArduinoJson | 7.4.3 |
+| Adafruit BME680 Library | Install through Arduino IDE Library Manager |
 
 Install any missing libraries through Arduino IDE Library Manager or the library's supported installation method. The list reflects the supplied compile environment; not every library listed is necessarily used in every build configuration.
 
